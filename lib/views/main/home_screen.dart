@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/theme_helper.dart';
+import '../core/utils/image_constant.dart';
 class MyHome extends StatefulWidget {
   MyHome({super.key});
   final List<Map<String, dynamic>> ingredientStatusList = [
@@ -7,6 +8,39 @@ class MyHome extends StatefulWidget {
       "count": "6",
       "label": "Tươi",
       "countColor": appTheme.green_A700,
+    },
+    {
+      "count": "2",
+      "label": "Sắp hết hạn",
+      "countColor": appTheme.orange_700,
+      "backgroundColor": appTheme.yellow_50,
+    },
+    {
+      "count": "1",
+      "label": "Hết hạn",
+      "countColor": appTheme.red_A700,
+      "backgroundColor": appTheme.red_50,
+    },
+  ];
+
+  final List<Map<String, dynamic>> recipeList = [
+    {
+      "imagePath": ImageConstant.imgFreshGardenSalad,
+      "rating": "95%",
+      "title": "Salad",
+      "cookingTime": "15 min",
+    },
+    {
+      "imagePath": ImageConstant.imgHealthyBuddhaBowl,
+      "rating": "87%",
+      "title": "Thịt gà xào",
+      "cookingTime": "25 min",
+    },
+    {
+      "imagePath": ImageConstant.imgCreamyPastaPrimavera,
+      "rating": "82%",
+      "title": "Mỳ ý kem",
+      "cookingTime": "30 min",
     },
   ];
   @override
