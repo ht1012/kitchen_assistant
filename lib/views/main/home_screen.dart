@@ -81,7 +81,6 @@ class _MyHomeState extends State<MyHome> {
                     children: [
                       _buildHeader(context),
                       _buildQuestion(context),
-                      _buildRecipeList(context),
                     ],
                   ),
                 ),
@@ -90,7 +89,6 @@ class _MyHomeState extends State<MyHome> {
           ),
         ),
       ),
-      bottomNavigationBar: _buildBottomNavigation(context),
     );
   }
   Widget _buildHeader(BuildContext context) {
@@ -148,17 +146,30 @@ class _MyHomeState extends State<MyHome> {
 
   Widget _buildQuestion(BuildContext context) {
     return Container(
+      margin: EdgeInsets.symmetric(horizontal: 12.h, vertical: 16.h),
+      padding: EdgeInsets.symmetric(horizontal: 16.h,vertical: 12.h),
+      decoration: BoxDecoration(
+        color: appTheme.gray_100,
+        borderRadius: BorderRadius.circular(18.h), 
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment:CrossAxisAlignment.start,
+            children: [
+              Text('Bạn muốn nấu gì hôm nay?',
+              style: TextStyleHelper.instance.body14SemiBoldInter.copyWith(height: 1.29),
+              ),
+              SizedBox(height: 4.h,)
+            ],
+          ),
+          Text(
+            'Các gợi ý khác',
+            style: TextStyleHelper.instance.body14BoldInter.copyWith(height: 1.29),
+          ),
+        ],
+      ),
     );
   }
-
-  Widget _buildRecipeList(BuildContext context) {
-    return Container(
-    );
-  }
-
-  Widget _buildBottomNavigation(BuildContext context) {
-    return Container(
-    );
-  }
-
 }
