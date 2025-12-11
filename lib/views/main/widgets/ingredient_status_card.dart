@@ -27,7 +27,6 @@ class IngredientStatusCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16.h),
       ),
       child: Column(
-        spacing: 4.h,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
@@ -35,6 +34,7 @@ class IngredientStatusCard extends StatelessWidget {
             style: TextStyleHelper.instance.headline24RegularInter
                 .copyWith(height: 1.25),
           ),
+          SizedBox(height: 4.h),
           Text(
             label,
             style: TextStyleHelper.instance.label11RegularInter
