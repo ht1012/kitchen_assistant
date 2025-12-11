@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
-
+import '../theme/theme_helper.dart';
 class MyHome extends StatefulWidget {
-  const MyHome({super.key});
-
+  MyHome({super.key});
+  final List<Map<String, dynamic>> ingredientStatusList = [
+    {
+      "count": "6",
+      "label": "Tươi",
+      "countColor": appTheme.green_A700,
+    },
+  ];
   @override
   State<MyHome> createState() => _MyHomeState();
 }
