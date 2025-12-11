@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/theme_helper.dart';
 import '../core/utils/image_constant.dart';
+import '../core/utils/size_utils.dart';
 class MyHome extends StatefulWidget {
   MyHome({super.key});
   final List<Map<String, dynamic>> ingredientStatusList = [
@@ -88,6 +89,12 @@ class _MyHomeState extends State<MyHome> {
 
 Widget _buildHeaderSection(BuildContext context) {
   return Container(
+    width: double.infinity,
+    color: appTheme.white_A700,
+    padding: EdgeInsets.symmetric(
+      horizontal: 10.h,
+      vertical: 12.h,
+    ),
   );
 }
 Widget _buildQuestionSection(BuildContext context) {
