@@ -7,7 +7,7 @@ import '../core/utils/image_constant.dart';
 import '../core/utils/size_utils.dart';
 import 'widgets/ingredient_status_card.dart';
 import 'widgets/recipe_card_item.dart';
-
+import '../widgets/custom_bottom_nav.dart';
 class MyHome extends StatefulWidget {
   MyHome({super.key});
   final List<Map<String, dynamic>> ingredientStatusList = [
@@ -55,6 +55,8 @@ class MyHome extends StatefulWidget {
 }
 
 class _MyHomeState extends State<MyHome> {
+  int currentIndex = 0;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -90,7 +92,14 @@ class _MyHomeState extends State<MyHome> {
           ),
         ),
       ),
-      bottomNavigationBar: _buildBottomNavigation(context),
+      bottomNavigationBar: CustomBottomNavigation(
+        currentIndex: currentIndex,
+          onTap: (index) {
+            setState(() {
+            currentIndex = index;
+          });
+        }
+      )
     );
   }
   Widget _buildHeader(BuildContext context) {
@@ -194,105 +203,105 @@ class _MyHomeState extends State<MyHome> {
       ),
     );
   }
-  Widget _buildBottomNavigation(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: appTheme.white_A700,
-        boxShadow: [
-          BoxShadow(
-            color: appTheme.black_900_19,
-            blurRadius: 8.h,
-            offset: Offset(0, -2.h),
-          ),
-        ],
-      ),
-      padding: EdgeInsets.symmetric(horizontal: 12.h, vertical: 10.h),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          _buildNavItem(
-            label: 'Trang chủ',
-            icon: Icons.home_rounded,
-            active: true,
-          ),
-          _buildNavItem(
-            label: 'Kho nguyên liệu',
-            asset: ImageConstant.imgNavKhoNguynLiu,
-          ),
-          _buildNavItem(
-            label: 'Mua sắm',
-            asset: ImageConstant.imgNavMuaSm,
-          ),
-          _buildNavItem(
-            label: 'Lập kế hoạch',
-            asset: ImageConstant.imgNavLpKHoch,
-          ),
-          Stack(
-            children: [
-              _buildNavItem(
-                label: 'Thông báo',
-                asset: ImageConstant.imgNavThngBo,
-              ),
-              Positioned(
-                top: 2.h,
-                right: 4.h,
-                child: Container(
-                  width: 8.h,
-                  height: 8.h,
-                  decoration: BoxDecoration(
-                    color: appTheme.red_500,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+  // Widget _buildBottomNavigation(BuildContext context) {
+  //   return Container(
+  //     decoration: BoxDecoration(
+  //       color: appTheme.white_A700,
+  //       boxShadow: [
+  //         BoxShadow(
+  //           color: appTheme.black_900_19,
+  //           blurRadius: 8.h,
+  //           offset: Offset(0, -2.h),
+  //         ),
+  //       ],
+  //     ),
+  //     padding: EdgeInsets.symmetric(horizontal: 12.h, vertical: 10.h),
+  //     child: Row(
+  //       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //       children: [
+  //         _buildNavItem(
+  //           label: 'Trang chủ',
+  //           icon: Icons.home_rounded,
+  //           active: true,
+  //         ),
+  //         _buildNavItem(
+  //           label: 'Kho nguyên liệu',
+  //           asset: ImageConstant.imgNavKhoNguynLiu,
+  //         ),
+  //         _buildNavItem(
+  //           label: 'Mua sắm',
+  //           asset: ImageConstant.imgNavMuaSm,
+  //         ),
+  //         _buildNavItem(
+  //           label: 'Lập kế hoạch',
+  //           asset: ImageConstant.imgNavLpKHoch,
+  //         ),
+  //         Stack(
+  //           children: [
+  //             _buildNavItem(
+  //               label: 'Thông báo',
+  //               asset: ImageConstant.imgNavThngBo,
+  //             ),
+  //             Positioned(
+  //               top: 2.h,
+  //               right: 4.h,
+  //               child: Container(
+  //                 width: 8.h,
+  //                 height: 8.h,
+  //                 decoration: BoxDecoration(
+  //                   color: appTheme.red_500,
+  //                   shape: BoxShape.circle,
+  //                 ),
+  //               ),
+  //             ),
+  //           ],
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
-  Widget _buildNavItem({
-    required String label,
-    String? asset,
-    IconData? icon,
-    bool active = false,
-  }) {
-    final color = active ? appTheme.green_A700 : appTheme.blue_gray_300_01;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (icon != null)
-          Icon(
-            icon,
-            color: color,
-            size: 26.h,
-          )
-        else
-          CustomImageView(
-            imagePath: asset ?? ImageConstant.imgImageNotFound,
-            width: 26.h,
-            height: 26.h,
-            color: color,
-          ),
-        SizedBox(height: 6.h),
-        Text(
-          label,
-          style: TextStyleHelper.instance.label11RegularInter
-              .copyWith(color: color, height: 1.27),
-        ),
-        if (active)
-          Container(
-            margin: EdgeInsets.only(top: 6.h),
-            width: 24.h,
-            height: 3.h,
-            decoration: BoxDecoration(
-              color: appTheme.green_A400,
-              borderRadius: BorderRadius.circular(6.h),
-            ),
-          ),
-      ],
-    );
-  }
+  // Widget _buildNavItem({
+  //   required String label,
+  //   String? asset,
+  //   IconData? icon,
+  //   bool active = false,
+  // }) {
+  //   final color = active ? appTheme.green_A700 : appTheme.blue_gray_300_01;
+  //   return Column(
+  //     mainAxisSize: MainAxisSize.min,
+  //     children: [
+  //       if (icon != null)
+  //         Icon(
+  //           icon,
+  //           color: color,
+  //           size: 26.h,
+  //         )
+  //       else
+  //         CustomImageView(
+  //           imagePath: asset ?? ImageConstant.imgImageNotFound,
+  //           width: 26.h,
+  //           height: 26.h,
+  //           color: color,
+  //         ),
+  //       SizedBox(height: 6.h),
+  //       Text(
+  //         label,
+  //         style: TextStyleHelper.instance.label11RegularInter
+  //             .copyWith(color: color, height: 1.27),
+  //       ),
+  //       if (active)
+  //         Container(
+  //           margin: EdgeInsets.only(top: 6.h),
+  //           width: 24.h,
+  //           height: 3.h,
+  //           decoration: BoxDecoration(
+  //             color: appTheme.green_A400,
+  //             borderRadius: BorderRadius.circular(6.h),
+  //           ),
+  //         ),
+  //     ],
+  //   );
+  // }
 }
 
