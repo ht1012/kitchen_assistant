@@ -81,6 +81,7 @@ class _MyHomeState extends State<MyHome> {
                     children: [
                       _buildHeader(context),
                       _buildQuestion(context),
+                      _buildRecipeList(context),
                     ],
                   ),
                 ),
@@ -168,6 +169,26 @@ class _MyHomeState extends State<MyHome> {
             'Các gợi ý khác',
             style: TextStyleHelper.instance.body14BoldInter.copyWith(height: 1.29),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecipeList(BuildContext context){
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12.h),
+      child: Column(
+        children: [
+          for(int i=0; i < widget.recipeList.length; i++)...[
+            RecipeCardItem(
+              imagePath: widget.recipeList[i]["imagePath"], 
+              rating: widget.recipeList[i]["rating"],
+              title: widget.recipeList[i]["title"],
+              cookingTime: widget.recipeList[i]["cookingTime"],
+            ),
+            if(i < widget.recipeList.length-1)
+              SizedBox(height: 12.h),
+          ]
         ],
       ),
     );
