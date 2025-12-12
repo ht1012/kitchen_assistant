@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-
-import 'views/core/utils/size_utils.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'views/main/home_screen.dart';
 
 void main() {
@@ -12,13 +11,16 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Sizer(
-      builder: (context, orientation, deviceType) {
+    return ScreenUtilInit(
+      designSize: const Size(360, 690), // kích thước thiết kế chuẩn
+      builder: (context, child) {
         return MaterialApp(
+          title: 'Bếp Trợ Lý',
           debugShowCheckedModeBanner: false,
-          title: 'Kitchen Assistant',
-          theme: ThemeData(),
-          home: const MyHome(),
+          theme: ThemeData(
+            primarySwatch: Colors.blue,
+          ),
+          home: const Dashboard(),
         );
       },
     );
