@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import 'views/core/utils/size_utils.dart';
 import 'views/main/home_screen.dart';
-import 'views/theme/theme_helper.dart';
 
 void main() {
   runApp(const MyApp());
@@ -18,8 +17,8 @@ class MyApp extends StatelessWidget {
         return MaterialApp(
           debugShowCheckedModeBanner: false,
           title: 'Kitchen Assistant',
-          theme: theme,
-          home: MyHome(),
+          theme: ThemeData(),
+          home: const MyHome(),
         );
       },
     );
