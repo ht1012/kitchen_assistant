@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/bottom_nav.dart';
-
+import '../virtualPantry/pantry_screen.dart';
 class Dashboard extends StatefulWidget {
   const Dashboard({super.key});
 
@@ -18,7 +18,7 @@ class _DashboardState extends State<Dashboard> {
         index: _currentIndex,
         children: const [
           _HomePage(),        // Trang chủ
-          _PantryPage(),      // Kho
+          PantryPage(),      // Kho
           _ShoppingPage(),    // Mua sắm
           _PlanPage(),        // Kế hoạch
           _NotificationPage() // Thông báo

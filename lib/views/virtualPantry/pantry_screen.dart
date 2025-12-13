@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 
-class IngredientScreen extends StatelessWidget {
-  const IngredientScreen({super.key});
+class PantryPage extends StatelessWidget {
+  const PantryPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: SingleChildScrollView(
+      child: Container(
+        width: double.infinity,
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -31,3 +32,4 @@ class IngredientScreen extends StatelessWidget {
     );
   }
 }
+
