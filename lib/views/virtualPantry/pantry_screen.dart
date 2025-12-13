@@ -9,15 +9,7 @@ class PantryPage extends StatelessWidget {
       "expiry": "8/12/2025",
       "status": "Tươi",
       "color": "0xFF008235",
-      "image": "https://placehold.co/60x63"
-    },
-    {
-      "name": "Chuối",
-      "quantity": "10 quả",
-      "expiry": "9/12/2025",
-      "status": "Tươi",
-      "color": "0xFF008235",
-      "image": "https://placehold.co/60x60"
+      "image": "assets/images/tao.png"
     },
   ];
 
@@ -206,7 +198,27 @@ class IngredientCard extends StatelessWidget {
   final Color color;
   final String image;
 
-  IngredientCard({required this.name, required this.quantity, required this.expiry, required this.status, required this.color, required this.image});
+  IngredientCard({
+    required this.name,
+    required this.quantity,
+    required this.expiry,
+    required this.status,
+    required this.color,
+    required this.image,
+  });
+
+  Color getBackgroundColor() {
+    switch (status) {
+      case 'Tươi':
+        return Color(0xFFEFFAF1); // xanh nhạt
+      case 'Sắp hết hạn':
+        return Color(0xFFFFFBE8); // vàng nhạt
+      case 'Hết hạn':
+        return Color(0xFFFFF2F2); // đỏ nhạt
+      default:
+        return Colors.white;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -214,7 +226,7 @@ class IngredientCard extends StatelessWidget {
       margin: EdgeInsets.symmetric(vertical: 6),
       height: 76,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: getBackgroundColor(), // dùng màu nền theo status
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: color.withOpacity(0.3), width: 2),
       ),
@@ -224,7 +236,13 @@ class IngredientCard extends StatelessWidget {
             width: 60,
             height: 60,
             margin: EdgeInsets.all(8),
-            decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), image: DecorationImage(image: NetworkImage(image), fit: BoxFit.cover)),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              image: DecorationImage(
+                image: AssetImage(image),
+                fit: BoxFit.cover,
+              ),
+            ),
           ),
           SizedBox(width: 8),
           Expanded(
