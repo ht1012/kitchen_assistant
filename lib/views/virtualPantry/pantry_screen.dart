@@ -1,7 +1,71 @@
 import 'package:flutter/material.dart';
 
 class PantryPage extends StatelessWidget {
-  const PantryPage({super.key});
+  PantryPage({super.key});
+  final List<Map<String, String>> fruits = [
+    {
+      "name": "Táo",
+      "quantity": "6 quả",
+      "expiry": "8/12/2025",
+      "status": "Tươi",
+      "color": "0xFF008235",
+      "image": "https://placehold.co/60x63"
+    },
+    {
+      "name": "Chuối",
+      "quantity": "10 quả",
+      "expiry": "9/12/2025",
+      "status": "Tươi",
+      "color": "0xFF008235",
+      "image": "https://placehold.co/60x60"
+    },
+  ];
+
+  final List<Map<String, String>> dairy = [
+    {
+      "name": "Sữa",
+      "quantity": "6 L",
+      "expiry": "8/12/2025",
+      "status": "Sắp hết hạn",
+      "color": "0xFFA65F00",
+      "image": "https://placehold.co/60x57"
+    },
+    {
+      "name": "Trứng",
+      "quantity": "6 quả",
+      "expiry": "6/12/2025",
+      "status": "Tươi",
+      "color": "0xFF008235",
+      "image": "https://placehold.co/60x59"
+    },
+    {
+      "name": "Sữa chua",
+      "quantity": "500g",
+      "expiry": "5/12/2025",
+      "status": "Hết hạn",
+      "color": "0xFFC10007",
+      "image": "https://placehold.co/60x56"
+    },
+  ];
+
+  final List<Map<String, String>> meatAndFish = [
+    {
+      "name": "Thịt bò",
+      "quantity": "500g",
+      "expiry": "10/12/2025",
+      "status": "Tươi",
+      "color": "0xFF008235",
+      "image": "https://placehold.co/60x60"
+    },
+    {
+      "name": "Cá hồi",
+      "quantity": "300g",
+      "expiry": "9/12/2025",
+      "status": "Sắp hết hạn",
+      "color": "0xFFA65F00",
+      "image": "https://placehold.co/60x60"
+    },
+  ];
 
   @override
   Widget build(BuildContext context) {

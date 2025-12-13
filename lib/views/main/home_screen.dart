@@ -16,7 +16,7 @@ class _DashboardState extends State<Dashboard> {
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,
-        children: const [
+        children:  [
           _HomePage(),        // Trang chủ
           PantryPage(),      // Kho
           _ShoppingPage(),    // Mua sắm
