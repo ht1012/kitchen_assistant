@@ -20,7 +20,7 @@ class PantryPage extends StatelessWidget {
       "expiry": "8/12/2025",
       "status": "Sắp hết hạn",
       "color": "0xFFA65F00",
-      "image": "https://placehold.co/60x57"
+      "image": "assets/images/sua.png"
     },
     {
       "name": "Trứng",
@@ -28,7 +28,7 @@ class PantryPage extends StatelessWidget {
       "expiry": "6/12/2025",
       "status": "Tươi",
       "color": "0xFF008235",
-      "image": "https://placehold.co/60x59"
+      "image": "assets/images/trung.png"
     },
     {
       "name": "Sữa chua",
@@ -36,17 +36,17 @@ class PantryPage extends StatelessWidget {
       "expiry": "5/12/2025",
       "status": "Hết hạn",
       "color": "0xFFC10007",
-      "image": "https://placehold.co/60x56"
+      "image": "assets/images/suachua.png"
     },
   ];
   static const List<Map<String, String>> meatAndFish = [
     {
-      "name": "Thịt bò",
+      "name": "Thịt gà",
       "quantity": "500g",
       "expiry": "10/12/2025",
       "status": "Tươi",
       "color": "0xFF008235",
-      "image": "https://placehold.co/60x60"
+      "image": "assets/images/thitga.png"
     },
     {
       "name": "Cá hồi",
@@ -54,7 +54,7 @@ class PantryPage extends StatelessWidget {
       "expiry": "9/12/2025",
       "status": "Sắp hết hạn",
       "color": "0xFFA65F00",
-      "image": "https://placehold.co/60x60"
+      "image": "assets/images/cahoi.png"
     },
   ];
 
