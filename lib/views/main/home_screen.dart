@@ -28,7 +28,7 @@ class _DashboardState extends State<Dashboard> {
               SizedBox(height: 16),
               _IngredientStatus(),
               SizedBox(height: 24),
-              //_SuggestSection(),
+              _SuggestSection(),
             ],
           ),
         ),
@@ -67,7 +67,6 @@ class __HeaderState extends State<_Header> {
     );
   }
 }
-
 class _IngredientStatus extends StatelessWidget {
   const _IngredientStatus();
 
@@ -154,6 +153,115 @@ class _StatusCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _SuggestSection extends StatelessWidget {
+  const _SuggestSection();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: const [
+        _SuggestHeader(),
+        SizedBox(height: 12),
+        _RecipeCard(title: 'Salad', time: '15 min'),
+        SizedBox(height: 12),
+        _RecipeCard(title: 'Mỳ Ý kem', time: '15 min'),
+      ],
+    );
+  }
+}
+
+class _SuggestHeader extends StatelessWidget {
+  const _SuggestHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: const [
+        Text(
+          'Bạn muốn nấu gì hôm nay?',
+          style: TextStyle(
+            fontStyle: FontStyle.italic,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        Text(
+          'Các gợi ý khác',
+          style: TextStyle(
+            color: Color(0xFF00C850),
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RecipeCard extends StatelessWidget {
+  final String title;
+  final String time;
+
+  const _RecipeCard({
+    required this.title,
+    required this.time,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFF2F4F6)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x19000000),
+            blurRadius: 3,
+            offset: Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Image.asset(
+              'assets/images/img_fresh_garden_salad.png',
+              width: 96,
+              height: 96,
+              fit: BoxFit.cover,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  time,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF697282),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
