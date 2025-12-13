@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '../widgets/bottom_nav.dart';
+
 
 class Dashboard extends StatefulWidget {
   const Dashboard({super.key});
@@ -9,6 +10,8 @@ class Dashboard extends StatefulWidget {
 }
 
 class _DashboardState extends State<Dashboard> {
+    int _currentIndex = 0; 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -32,8 +35,15 @@ class _DashboardState extends State<Dashboard> {
             ],
           ),
         ),
-      )
-      //bottomNavigationBar: _BottomNav(),
+      ),
+      bottomNavigationBar: BottomNav(
+        currentIndex: _currentIndex,
+        onTap: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
+      ),
     );
   }
 }
