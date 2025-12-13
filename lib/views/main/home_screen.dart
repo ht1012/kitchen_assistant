@@ -18,7 +18,7 @@ class _DashboardState extends State<Dashboard> {
         index: _currentIndex,
         children:  [
           _HomePage(),        // Trang chủ
-          PantryPage(),      // Kho
+          const PantryPage(),      // Kho
           _ShoppingPage(),    // Mua sắm
           _PlanPage(),        // Kế hoạch
           _NotificationPage() // Thông báo

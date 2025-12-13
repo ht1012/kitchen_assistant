@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 class PantryPage extends StatelessWidget {
-  PantryPage({super.key});
-  final List<Map<String, String>> fruits = [
+  const PantryPage({super.key});
+  static const List<Map<String, String>> fruits = [
     {
       "name": "Táo",
       "quantity": "6 quả",
@@ -21,7 +21,7 @@ class PantryPage extends StatelessWidget {
     },
   ];
 
-  final List<Map<String, String>> dairy = [
+  static const List<Map<String, String>> dairy = [
     {
       "name": "Sữa",
       "quantity": "6 L",
@@ -47,8 +47,7 @@ class PantryPage extends StatelessWidget {
       "image": "https://placehold.co/60x56"
     },
   ];
-
-  final List<Map<String, String>> meatAndFish = [
+  static const List<Map<String, String>> meatAndFish = [
     {
       "name": "Thịt bò",
       "quantity": "500g",
@@ -67,6 +66,29 @@ class PantryPage extends StatelessWidget {
     },
   ];
 
+  Widget ingredientSection(String title, List<Map<String, String>> items) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(height: 16),
+        Text(
+          title,
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: Color(0xFF101727)),
+        ),
+        SizedBox(height: 12),
+        Column(
+          children: items.map((item) => IngredientCard(
+            name: item['name']!,
+            quantity: item['quantity']!,
+            expiry: item['expiry']!,
+            status: item['status']!,
+            color: Color(int.parse(item['color']!)),
+            image: item['image']!,
+          )).toList(),
+        )
+      ],
+    );
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -128,6 +150,9 @@ class PantryPage extends StatelessWidget {
                     ),
                   ],
                 ),
+                ingredientSection("Quả & rau", fruits),
+                ingredientSection("Trứng & Sữa", dairy),
+                ingredientSection("Thịt & Cá", meatAndFish),
               ],
             ),
           ),
@@ -169,6 +194,52 @@ class _StatusCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+class IngredientCard extends StatelessWidget {
+  final String name;
+  final String quantity;
+  final String expiry;
+  final String status;
+  final Color color;
+  final String image;
+
+  IngredientCard({required this.name, required this.quantity, required this.expiry, required this.status, required this.color, required this.image});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: EdgeInsets.symmetric(vertical: 6),
+      height: 76,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withOpacity(0.3), width: 2),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            margin: EdgeInsets.all(8),
+            decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), image: DecorationImage(image: NetworkImage(image), fit: BoxFit.cover)),
+          ),
+          SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(name, style: TextStyle(fontSize: 14.8, color: Color(0xFF101727))),
+                Text(status, style: TextStyle(fontSize: 10, color: color)),
+                Text("Số lượng: $quantity", style: TextStyle(fontSize: 10, color: Color(0xFF495565))),
+                Text("Hạn sử dụng: $expiry", style: TextStyle(fontSize: 10, color: Color(0xFF495565))),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
