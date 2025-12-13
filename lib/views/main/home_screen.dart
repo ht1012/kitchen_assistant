@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/bottom_nav.dart';
 
-
 class Dashboard extends StatefulWidget {
   const Dashboard({super.key});
 
@@ -10,31 +9,20 @@ class Dashboard extends StatefulWidget {
 }
 
 class _DashboardState extends State<Dashboard> {
-    int _currentIndex = 0; 
+  int _currentIndex = 0;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Color(0xFFF0FDF4), Colors.white],
-            ),
-          ),
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: const [
-              _Header(),
-              SizedBox(height: 16),
-              _IngredientStatus(),
-              SizedBox(height: 24),
-              _SuggestSection(),
-            ],
-          ),
-        ),
+      body: IndexedStack(
+        index: _currentIndex,
+        children: const [
+          _HomePage(),        // Trang chủ
+          _PantryPage(),      // Kho
+          _ShoppingPage(),    // Mua sắm
+          _PlanPage(),        // Kế hoạch
+          _NotificationPage() // Thông báo
+        ],
       ),
       bottomNavigationBar: BottomNav(
         currentIndex: _currentIndex,
@@ -48,14 +36,83 @@ class _DashboardState extends State<Dashboard> {
   }
 }
 
-class _Header extends StatefulWidget {
-  const _Header({super.key});
+class _HomePage extends StatelessWidget {
+  const _HomePage();
 
   @override
-  State<_Header> createState() => __HeaderState();
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFFF0FDF4), Colors.white],
+          ),
+        ),
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: const [
+            _Header(),
+            SizedBox(height: 16),
+            _IngredientStatus(),
+            SizedBox(height: 24),
+            _SuggestSection(),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
-class __HeaderState extends State<_Header> {
+
+class _PantryPage extends StatelessWidget {
+  const _PantryPage();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Text('Màn hình Kho', style: TextStyle(fontSize: 22)),
+    );
+  }
+}
+
+class _ShoppingPage extends StatelessWidget {
+  const _ShoppingPage();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Text('Mua sắm', style: TextStyle(fontSize: 22)),
+    );
+  }
+}
+
+class _PlanPage extends StatelessWidget {
+  const _PlanPage();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Text('Kế hoạch', style: TextStyle(fontSize: 22)),
+    );
+  }
+}
+
+class _NotificationPage extends StatelessWidget {
+  const _NotificationPage();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Text('Thông báo', style: TextStyle(fontSize: 22)),
+    );
+  }
+}
+
+class _Header extends StatelessWidget {
+  const _Header();
+
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -77,6 +134,7 @@ class __HeaderState extends State<_Header> {
     );
   }
 }
+
 class _IngredientStatus extends StatelessWidget {
   const _IngredientStatus();
 
@@ -87,10 +145,7 @@ class _IngredientStatus extends StatelessWidget {
       children: [
         const Text(
           'Tình trạng nguyên liệu',
-          style: TextStyle(
-            fontSize: 14,
-            color: Color(0xFF697282),
-          ),
+          style: TextStyle(fontSize: 14, color: Color(0xFF697282)),
         ),
         const SizedBox(height: 12),
         Row(
@@ -147,19 +202,10 @@ class _StatusCard extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              count,
-              style: TextStyle(
-                fontSize: 24,
-                color: textColor,
-              ),
-            ),
+            Text(count, style: TextStyle(fontSize: 24, color: textColor)),
             Text(
               label,
-              style: const TextStyle(
-                fontSize: 12,
-                color: Color(0xFF495565),
-              ),
+              style: const TextStyle(fontSize: 12, color: Color(0xFF495565)),
             ),
           ],
         ),
@@ -253,21 +299,13 @@ class _RecipeCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
+                Text(title,
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.w500)),
                 const SizedBox(height: 4),
-                Text(
-                  time,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF697282),
-                  ),
-                ),
+                Text(time,
+                    style: const TextStyle(
+                        fontSize: 12, color: Color(0xFF697282))),
               ],
             ),
           ),
