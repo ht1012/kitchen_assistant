@@ -26,7 +26,7 @@ class _DashboardState extends State<Dashboard> {
             children: const [
               _Header(),
               SizedBox(height: 16),
-              //_IngredientStatus(),
+              _IngredientStatus(),
               SizedBox(height: 24),
               //_SuggestSection(),
             ],
@@ -64,6 +64,97 @@ class __HeaderState extends State<_Header> {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _IngredientStatus extends StatelessWidget {
+  const _IngredientStatus();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Tình trạng nguyên liệu',
+          style: TextStyle(
+            fontSize: 14,
+            color: Color(0xFF697282),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: const [
+            _StatusCard(
+              count: '6',
+              label: 'Tươi',
+              bgColor: Colors.white,
+              textColor: Color(0xFF00A63D),
+            ),
+            SizedBox(width: 12),
+            _StatusCard(
+              count: '2',
+              label: 'Sắp hết hạn',
+              bgColor: Color(0xFFFDFBE8),
+              textColor: Color(0xFFD08700),
+            ),
+            SizedBox(width: 12),
+            _StatusCard(
+              count: '1',
+              label: 'Hết hạn',
+              bgColor: Color(0xFFFEF2F2),
+              textColor: Color(0xFFE7000A),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _StatusCard extends StatelessWidget {
+  final String count;
+  final String label;
+  final Color bgColor;
+  final Color textColor;
+
+  const _StatusCard({
+    required this.count,
+    required this.label,
+    required this.bgColor,
+    required this.textColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        height: 76,
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              count,
+              style: TextStyle(
+                fontSize: 24,
+                color: textColor,
+              ),
+            ),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                color: Color(0xFF495565),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
