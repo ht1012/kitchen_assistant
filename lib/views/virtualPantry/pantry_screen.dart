@@ -5,28 +5,17 @@ class PantryPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
-            Text(
-              'Kho nguyên liệu',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.w400,
-              ),
-            ),
-            SizedBox(height: 4),
-            Text(
-              'Quản lý nguyên liệu của bạn',
-              style: TextStyle(
-                color: Color(0xFF697282),
-              ),
-            ),
-          ],
+    return Scaffold(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFFF0FDF4),
+              Colors.white,
+            ],
+          ),
         ),
       ),
     );
