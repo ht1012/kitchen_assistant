@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/bottom_nav.dart';
+import '../mealPlanner/meal_planner.dart';
 
 class Dashboard extends StatefulWidget {
   const Dashboard({super.key});
@@ -20,7 +21,7 @@ class _DashboardState extends State<Dashboard> {
           _HomePage(),        // Trang chủ
           _PantryPage(),      // Kho
           _ShoppingPage(),    // Mua sắm
-          _PlanPage(),        // Kế hoạch
+          PlanPage(),        // Kế hoạch
           _NotificationPage() // Thông báo
         ],
       ),
@@ -84,17 +85,6 @@ class _ShoppingPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Center(
       child: Text('Mua sắm', style: TextStyle(fontSize: 22)),
-    );
-  }
-}
-
-class _PlanPage extends StatelessWidget {
-  const _PlanPage();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Kế hoạch', style: TextStyle(fontSize: 22)),
     );
   }
 }
