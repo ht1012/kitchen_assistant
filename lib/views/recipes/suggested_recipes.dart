@@ -10,6 +10,36 @@ class Recipes extends StatelessWidget {
         child: Column(
           children: [
             //body cuộn
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildHeader(),
+                    // Bộ lọc (Filter)
+                    Container(
+                      color: Colors.white,
+                      padding: const EdgeInsets.all(15),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildFilterSection('Thời gian nấu ăn', ['Tất cả', 'Nhanh (≤20’)', 'Trung bình', 'Dài (>35’)']),
+                          const SizedBox(height: 15),
+                          _buildFilterSection('Loại ẩm thực', ['Tất cả', 'Italian', 'American', 'Asian']),
+                          const SizedBox(height: 15),
+                          _buildFilterSection('Thời điểm', ['Tất cả', 'Sáng', 'Trưa', 'Tối']),
+                          const SizedBox(height: 15),
+                          _buildFilterSection('Khẩu phần ăn', ['Tất cả', '1 người', '2-4 người', '> 5 người'])
+                        ],
+                      ),
+                    ),
+                    // Thông báo tìm thấy
+
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),
