@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/bottom_nav.dart';
+import '../notification/notification.dart';
 
 class Dashboard extends StatefulWidget {
   const Dashboard({super.key});
@@ -21,7 +22,7 @@ class _DashboardState extends State<Dashboard> {
           _PantryPage(),      // Kho
           _ShoppingPage(),    // Mua sắm
           _PlanPage(),        // Kế hoạch
-          _NotificationPage() // Thông báo
+          NotificationPage() // Thông báo
         ],
       ),
       bottomNavigationBar: BottomNav(
@@ -95,17 +96,6 @@ class _PlanPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Center(
       child: Text('Kế hoạch', style: TextStyle(fontSize: 22)),
-    );
-  }
-}
-
-class _NotificationPage extends StatelessWidget {
-  const _NotificationPage();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Thông báo', style: TextStyle(fontSize: 22)),
     );
   }
 }
