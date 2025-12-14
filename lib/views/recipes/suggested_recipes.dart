@@ -35,7 +35,46 @@ class Recipes extends StatelessWidget {
                       ),
                     ),
                     // Thông báo tìm thấy
-
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 15),
+                      child: Center(
+                        child: Text(
+                          'Đã tìm thấy 3 công thức nấu ăn',
+                          style: TextStyle(
+                            color: Color(0xFF495565),
+                            fontStyle: FontStyle.italic,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Danh sách món ăn
+                    const RecipeCard(
+                      title: 'Cá hồi nướng với rau',
+                      image: "assets/images/recipes/recipe1.png",
+                      time: '30 phút',
+                      steps: '7/7',
+                      tags: ['American', 'Trung bình'],
+                      matchPercent: 100,
+                    ),
+                    const SizedBox(height: 15),
+                    const RecipeCard(
+                      title: 'Cá hồi nướng với rau',
+                      image: "assets/images/recipes/recipe1.png",
+                      time: '30 phút',
+                      steps: '7/7',
+                      tags: ['American', 'Dễ'],
+                      matchPercent: 100,
+                    ),
+                    const SizedBox(height: 15),
+                    const RecipeCard(
+                      title: 'Mỳ ống sốt cà chua',
+                      image: "assets/images/recipes/recipe2.png",
+                      time: '30 phút',
+                      steps: '5/6',
+                      tags: ['Italian', 'Dễ'],
+                      matchPercent: 83,
+                    ),
                   ],
                 ),
               ),
