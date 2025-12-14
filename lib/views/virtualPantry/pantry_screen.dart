@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import 'add_ingredients.dart';
 class PantryPage extends StatelessWidget {
   const PantryPage({super.key});
   static const List<Map<String, String>> fruits = [
@@ -84,7 +84,18 @@ class PantryPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // ===== Nền Gradient =====
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: const Color(0xFF00C850),
+        child: const Icon(Icons.add, color: Colors.white),
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const add_ingre(),
+            ),
+          );
+        },
+      ),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
