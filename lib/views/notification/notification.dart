@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-// import '../widgets/bottom_nav.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class NotificationPage extends StatelessWidget {
   const NotificationPage({super.key});
@@ -212,6 +212,7 @@ class NotificationPage extends StatelessWidget {
   Widget _buildExpiredNotification() {
     return _buildNotificationCard(
       iconColor: const LinearGradient(colors: [Color(0xFFFF6366), Color(0xFFFA2B36)]),
+      iconAsset: 'assets/images/icon_warning.png',
       title: 'Thành phần đã hết hạn!',
       subtitle: 'Sữa chua đã hết hạn vào hôm nay',
       time: 'Vừa xong',
@@ -219,6 +220,13 @@ class NotificationPage extends StatelessWidget {
       badgeColor: const Color(0xFFFEE1E1),
       badgeTextColor: const Color(0xFFC10007),
       primaryButtonText: 'Xem 8 công thức',
+      primaryButtonIcon: SvgPicture.asset(
+        'assets/images/icon_viewRecipe.svg',
+        colorFilter: const ColorFilter.mode(
+          Colors.white,
+          BlendMode.srcIn,
+        ),
+      ),
       primaryButtonColor: const LinearGradient(colors: [Color(0xFFFF6366), Color(0xFFFA2B36)]),
       backgroundColor: const LinearGradient(colors: [Color(0xFFFEF2F2), Color(0x7FFEE1E1)]),
       borderColor: const Color(0xFFFFA2A2),
@@ -229,6 +237,7 @@ class NotificationPage extends StatelessWidget {
   Widget _buildExpiringTodayNotification() {
     return _buildNotificationCard(
       iconColor: const LinearGradient(colors: [Color(0xFFFF6366), Color(0xFFFA2B36)]),
+      iconAsset: 'assets/images/icon_warning.png',
       title: 'Hết hạn hôm nay!',
       subtitle: 'Sữa sẽ hết hạn vào hôm nay',
       time: '2 giờ trước',
@@ -236,6 +245,13 @@ class NotificationPage extends StatelessWidget {
       badgeColor: const Color(0xFFFEE1E1),
       badgeTextColor: const Color(0xFFC10007),
       primaryButtonText: 'Xem 5 công thức',
+      primaryButtonIcon: SvgPicture.asset(
+        'assets/images/icon_viewRecipe.svg',
+        colorFilter: const ColorFilter.mode(
+          Colors.white,
+          BlendMode.srcIn,
+        ),
+      ),
       primaryButtonColor: const LinearGradient(colors: [Color(0xFFFF6366), Color(0xFFFA2B36)]),
       backgroundColor: const LinearGradient(colors: [Color(0xFFFEF2F2), Color(0x7FFEE1E1)]),
       borderColor: const Color(0xFFFFA1A2),
@@ -246,6 +262,7 @@ class NotificationPage extends StatelessWidget {
   Widget _buildExpiringInTwoDaysNotification() {
     return _buildNotificationCard(
       iconColor: const LinearGradient(colors: [Color(0xFFFFDF20), Color(0xFFFFDF20)]),
+      iconAsset: 'assets/images/icon_time.png',
       title: 'Sắp hết hạn',
       subtitle: 'Gà sẽ hết hạn sau 2 ngày',
       time: '5 giờ trước',
@@ -253,6 +270,13 @@ class NotificationPage extends StatelessWidget {
       badgeColor: const Color(0xFFFFECD4),
       badgeTextColor: const Color(0xFFC93400),
       primaryButtonText: 'Xem 8 công thức',
+      primaryButtonIcon: SvgPicture.asset(
+        'assets/images/icon_viewRecipe.svg',
+        colorFilter: const ColorFilter.mode(
+          Color(0xFFFF8904),
+          BlendMode.srcIn,
+        ),
+      ),
       primaryButtonColor: const LinearGradient(colors: [Color(0xFFFFDF20), Color(0xFFFFDF20)]),
       primaryButtonTextColor: const Color(0xFFFF8904),
       backgroundColor: const LinearGradient(colors: [Color(0xFFFFF7EC), Color(0x7FFEF9C2)]),
@@ -264,6 +288,7 @@ class NotificationPage extends StatelessWidget {
   Widget _buildPreviousNotification() {
     return _buildNotificationCard(
       iconColor: const LinearGradient(colors: [Color(0xFFFFDF20), Color(0xFFFFDF20)]),
+      iconAsset: 'assets/images/icon_time.png',
       title: 'Hết hạn hôm nay!',
       subtitle: 'Sữa sẽ hết hạn vào hôm nay',
       time: '2 giờ trước',
@@ -271,6 +296,13 @@ class NotificationPage extends StatelessWidget {
       badgeColor: const Color(0xFFFFECD4),
       badgeTextColor: const Color(0xFFC93400),
       primaryButtonText: 'Xem 5 công thức',
+      primaryButtonIcon: SvgPicture.asset(
+        'assets/images/icon_viewRecipe.svg',
+        colorFilter: const ColorFilter.mode(
+          Color(0xFFFF8904),
+          BlendMode.srcIn,
+        ),
+      ),
       primaryButtonColor: const LinearGradient(colors: [Color(0xFFFFDF20), Color(0xFFFFDF20)]),
       primaryButtonTextColor: const Color(0xFFFF8904),
       backgroundColor: null,
@@ -282,11 +314,19 @@ class NotificationPage extends StatelessWidget {
   Widget _buildLowStockNotification() {
     return _buildNotificationCard(
       iconColor: const LinearGradient(colors: [Color(0xFF50A2FF), Color(0xFF2B7FFF)]),
+      iconAsset: 'assets/images/icon_infor.png',
       title: 'Sắp hết',
       subtitle: 'Chỉ còn 2 quả trứng trong kho',
       time: '1 ngày trước',
       badgeText: null,
       primaryButtonText: 'Xem 5 công thức',
+      primaryButtonIcon: SvgPicture.asset(
+        'assets/images/icon_viewRecipe.svg',
+        colorFilter: const ColorFilter.mode(
+          Colors.white,
+          BlendMode.srcIn,
+        ),
+      ),
       primaryButtonColor: const LinearGradient(colors: [Color(0xFF50A2FF), Color(0xFF2B7FFF)]),
       backgroundColor: null,
       borderColor: const Color(0xFFE5E7EB),
@@ -296,6 +336,7 @@ class NotificationPage extends StatelessWidget {
 
   Widget _buildNotificationCard({
     required LinearGradient iconColor,
+    required String iconAsset,
     required String title,
     required String subtitle,
     required String time,
@@ -303,13 +344,16 @@ class NotificationPage extends StatelessWidget {
     Color? badgeColor,
     Color? badgeTextColor,
     required String primaryButtonText,
+    required Widget primaryButtonIcon,
     required LinearGradient primaryButtonColor,
     Color? primaryButtonTextColor,
     LinearGradient? backgroundColor,
     required Color borderColor,
     required bool isNew,
   }) {
-    return Container(
+return Stack(
+  children: [
+    Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -343,7 +387,16 @@ class NotificationPage extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: const Icon(Icons.warning, color: Colors.white, size: 20),
+                child: Center(
+                  child: SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: Image.asset(
+                      iconAsset,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -370,13 +423,15 @@ class NotificationPage extends StatelessWidget {
                 ),
               ),
               if (isNew)
-                Container(
-                  width: 12,
-                  height: 12,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFA2B36),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2),
+                Padding(
+                    padding: const EdgeInsets.only(bottom: 36),
+                    child: Container(
+                      width: 12,
+                      height: 12,
+                      decoration: const BoxDecoration(
+                      color: Color(0xFFFA2B36),
+                      shape: BoxShape.circle,
+                    ),
                   ),
                 ),
             ],
@@ -436,13 +491,24 @@ class NotificationPage extends StatelessWidget {
                     ],
                   ),
                   child: Center(
-                    child: Text(
-                      primaryButtonText,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: primaryButtonTextColor ?? Colors.white,
-                        fontWeight: FontWeight.w500,
-                      ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: primaryButtonIcon,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          primaryButtonText,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: primaryButtonTextColor ?? Colors.white,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -468,9 +534,23 @@ class NotificationPage extends StatelessWidget {
                 ),
               ),
             ],
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+        Positioned(
+          top: 16,
+          right: 10,
+          child: Transform.scale(
+            scale: 1.4,
+            child: Image.asset(
+              'assets/images/icon_cancel.png',
+              width: 36,
+              height: 36,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
