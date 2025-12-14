@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/bottom_nav.dart';
+import '../shoppingList/shopping_list.dart';
 
 class Dashboard extends StatefulWidget {
   const Dashboard({super.key});
@@ -7,7 +8,7 @@ class Dashboard extends StatefulWidget {
   @override
   State<Dashboard> createState() => _DashboardState();
 }
-
+  
 class _DashboardState extends State<Dashboard> {
   int _currentIndex = 0;
 
@@ -19,7 +20,7 @@ class _DashboardState extends State<Dashboard> {
         children: const [
           _HomePage(),        // Trang chủ
           _PantryPage(),      // Kho
-          _ShoppingPage(),    // Mua sắm
+          ShoppingPage(),    // Mua sắm
           _PlanPage(),        // Kế hoạch
           _NotificationPage() // Thông báo
         ],
@@ -73,17 +74,6 @@ class _PantryPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Center(
       child: Text('Màn hình Kho', style: TextStyle(fontSize: 22)),
-    );
-  }
-}
-
-class _ShoppingPage extends StatelessWidget {
-  const _ShoppingPage();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Mua sắm', style: TextStyle(fontSize: 22)),
     );
   }
 }
