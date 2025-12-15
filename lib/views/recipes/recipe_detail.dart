@@ -51,6 +51,13 @@ class _RecipeDetailState extends State<RecipeDetail> {
                   const SizedBox(height: 20),
                   
                   _buildTabButtons(),
+                  const SizedBox(height: 20),
+                  
+                  // Hiển thị nội dung dựa trên Tab đang chọn
+                  // _selectedTab == 0 
+                  _buildIngredientsList(),
+                  const SizedBox(height: 20),
+                  if (_selectedTab == 0) _buildTipBox(), // Chỉ hiện Tip ở tab nguyên liệu
                 ],
               ),
             ),
@@ -329,4 +336,52 @@ Widget _buildSingleTabBtn({
   );
 }
 
+  Widget _buildIngredientsList() {
+    return Column(
+      children: [
+        _buildIngredientItem('Mỳ Pasta', '500g', true),
+        const SizedBox(height: 10),
+        _buildIngredientItem('Cà chua', '1 quả', true),
+        const SizedBox(height: 10),
+        _buildIngredientItem('Tỏi', '1 củ', true),
+      ],
+    );
+  }
+
+  Widget _buildIngredientItem(String name, String amount, bool isChecked) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: isChecked ? const Color(0xFFF0FDF4) : const Color(0xFFF9FAFB),
+        border: Border.all(color: isChecked ? const Color(0xFFB8F7CF) : const Color(0xFFE5E7EB)),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          Icon(isChecked ? Icons.check_circle : Icons.cancel, color: isChecked ? const Color(0xFF00C850) : Colors.grey),
+          const SizedBox(width: 12),
+          Text(name, style: const TextStyle(fontSize: 16)),
+          const Spacer(),
+          Text(amount, style: const TextStyle(color: Colors.grey)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTipBox() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF7EC),
+        border: Border.all(color: const Color(0xFFFFD6A7)),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: const Row(
+        children: [
+          Text('💡 ', style: TextStyle(fontSize: 16)),
+          Expanded(child: Text('Thiếu 1 nguyên liệu - Thêm vào giỏ hàng?', style: TextStyle(color: Color(0xFF9F2D00), fontSize: 13))),
+        ],
+      ),
+    );
+  }
 }
