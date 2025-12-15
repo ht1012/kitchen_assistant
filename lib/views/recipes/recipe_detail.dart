@@ -14,6 +14,24 @@ class _RecipeDetailState extends State<RecipeDetail> {
   bool _isVideoInitialized = true;
 
   @override
+  void initState() {
+    super.initState();
+    // Khởi tạo video (Thay URL bằng link video thực tế của bạn)
+    _videoController = VideoPlayerController.asset('assets/videos/pasta.mp4',
+    )..initialize().then((_) {
+        setState(() {
+          _isVideoInitialized = true;
+        });
+      });
+  }
+
+  @override
+  void dispose() {
+    _videoController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
@@ -22,11 +40,14 @@ class _RecipeDetailState extends State<RecipeDetail> {
           children: [
             _buildVideoHeader(),
             Padding(
-              padding: const EdgeInsets.all(24.0),
+              padding: const EdgeInsets.all(0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildAuthorSection()
+                  _buildDescribe(),
+                  const SizedBox(height: 24),
+                  // Các phần khác như nguyên liệu, hướng dẫn, v.v.
+                  _buildTimeInfoRow(),
                 ],
               ),
             ),
@@ -138,14 +159,17 @@ class _RecipeDetailState extends State<RecipeDetail> {
     );
   }
   // --- CÁC WIDGET CŨ GIỮ NGUYÊN ---
-  Widget _buildAuthorSection() {
+  Widget _buildDescribe() {
     return Row(
       children: [
-        const SizedBox(width: 12),
+        Padding(
+          padding: const EdgeInsets.all(10),
+        ),
+        const SizedBox(width: 10),
         const Expanded(
           child: Text(
             'Một món mì ống béo ngậy và thơm ngon với cà chua tươi và '
-            'các loại thảo mộc. Món ăn này rất dễ làm và chắc chắn sẽ làm hài lòng cả gia đình bạn.',
+             + 'các loại thảo mộc. Món ăn này rất dễ làm và chắc chắn sẽ làm hài lòng cả gia đình bạn.',
             style: TextStyle(color: Color(0xFF354152), height: 1.5),
             maxLines: 5,
             overflow: TextOverflow.ellipsis,
@@ -154,4 +178,44 @@ class _RecipeDetailState extends State<RecipeDetail> {
       ],
     );
   }
+
+  Widget _buildTimeInfoRow() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: 
+        BoxDecoration(
+          color: Colors.lightGreen[50],
+          border: Border.all(color: const Color(0xFFB8F7CF)),        ),
+      child: Row(
+        children: [
+        Expanded(child: _buildInfoCard('Thời gian chuẩn bị', '15 phút')),
+        const SizedBox(width: 12),
+        Expanded(child: _buildInfoCard('Thời gian nấu', '25 phút')),
+      ],
+      ),
+      
+    );
+  }
+
+  Widget _buildInfoCard(String title, String time) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: const Color(0xFFB8F7CF)),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: const TextStyle(color: Color(0xFF495565), fontSize: 12)),
+          const SizedBox(height: 4),
+          Text(time, style: const TextStyle(color: Color(0xFF101727), fontSize: 18, fontWeight: FontWeight.bold)),
+        ],
+      ),
+    );
+  }
+
+  
+
 }
