@@ -12,6 +12,7 @@ class _RecipeDetailState extends State<RecipeDetail> {
   int _selectedTab = 0;
   late VideoPlayerController _videoController;
   bool _isVideoInitialized = true;
+  bool _isCooking = false;
 
   @override
   void initState() {
@@ -59,6 +60,8 @@ class _RecipeDetailState extends State<RecipeDetail> {
                       : _buildInstructionsList(),
                   const SizedBox(height: 20),
                   if (_selectedTab == 0) _buildTipBox(), // Chỉ hiện Tip ở tab nguyên liệu
+                  const SizedBox(height: 30),
+                  _buildBottomBar(),
                 ],
               ),
             ),
@@ -508,6 +511,128 @@ Widget _buildSingleTabBtn({
           ),
         ),
       ],
+    ),
+  );
+}
+
+
+// ...
+
+Widget _buildBottomBar() {
+  // Sử dụng SafeArea để tránh bị tràn xuống thanh Home ảo của iPhone/Android
+  return SafeArea(
+    top: false, // Không cần safe area ở trên
+    child: Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(10, 10, 10, 10), // Giảm padding bottom vì SafeArea đã lo rồi
+      decoration: ShapeDecoration(
+        color: Colors.white,
+        // Chỉ giữ viền trên, bỏ các viền khác nếu không cần thiết
+        shape: const Border(
+          top: BorderSide(width: 1, color: Color(0xFFF2F4F6)),
+        ),
+        shadows: const [
+          BoxShadow(
+            color: Color(0x0D000000), // Giảm opacity bóng đổ cho nhẹ nhàng hơn
+            blurRadius: 10,
+            offset: Offset(0, -5), // Bóng đổ hắt lên trên
+          )
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min, // Quan trọng: Chỉ chiếm chiều cao vừa đủ
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // --- BUTTON 1: Bắt đầu nấu / Đang nấu ---
+          Expanded(
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _isCooking = !_isCooking;
+                });
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 20), // Hiệu ứng chuyển màu mượt mà
+                padding: const EdgeInsets.symmetric(vertical: 12), // Giảm padding dọc một chút để đỡ bị cao quá
+                decoration: ShapeDecoration(
+                  color: _isCooking ? const Color(0xFFEF5350) : null,
+                  gradient: _isCooking
+                      ? null
+                      : const LinearGradient(
+                          begin: Alignment(0.00, 0.50),
+                          end: Alignment(1.00, 0.50),
+                          colors: [Color(0xFF05DF72), Color(0xFF00C850)],
+                        ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  shadows: const [
+                    BoxShadow(
+                      color: Color(0x19000000),
+                      blurRadius: 6,
+                      offset: Offset(0, 4),
+                      spreadRadius: -4,
+                    )
+                  ],
+                ),
+                child: Center(
+                  child: Text(
+                    _isCooking ? 'Đang nấu' : 'Bắt đầu nấu',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13.20,
+                      fontWeight: FontWeight.w600, // Tăng độ đậm một chút cho dễ đọc
+                      fontFamily: 'Inter',
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(width: 16), // Khoảng cách giữa 2 nút
+
+          // --- BUTTON 2: Tạo kế hoạch ---
+          Expanded(
+            child: GestureDetector(
+              onTap: () {
+                // Xử lý sự kiện
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                decoration: ShapeDecoration(
+                  color: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    side: const BorderSide(width: 1, color: Color(0xFF05DF72)),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  shadows: const [
+                    BoxShadow(
+                      color: Color(0x19000000),
+                      blurRadius: 6,
+                      offset: Offset(0, 4),
+                      spreadRadius: -4,
+                    )
+                  ],
+                ),
+                child: const Center(
+                  child: Text(
+                    'Tạo kế hoạch',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Color(0xFF05DF72),
+                      fontSize: 13.20,
+                      fontWeight: FontWeight.w600,
+                      fontFamily: 'Inter',
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     ),
   );
 }
