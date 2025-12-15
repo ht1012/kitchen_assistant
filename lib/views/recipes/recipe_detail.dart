@@ -54,8 +54,9 @@ class _RecipeDetailState extends State<RecipeDetail> {
                   const SizedBox(height: 20),
                   
                   // Hiển thị nội dung dựa trên Tab đang chọn
-                  // _selectedTab == 0 
-                  _buildIngredientsList(),
+                  _selectedTab == 0 
+                      ? _buildIngredientsList() 
+                      : _buildInstructionsList(),
                   const SizedBox(height: 20),
                   if (_selectedTab == 0) _buildTipBox(), // Chỉ hiện Tip ở tab nguyên liệu
                 ],
@@ -384,4 +385,130 @@ Widget _buildSingleTabBtn({
       ),
     );
   }
+  Widget _buildInstructionsList() {
+    // Đây là nội dung giả lập cho trang "Hướng dẫn"
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildStepItem(1, "Luộc mỳ trong nước sôi khoảng 10 phút đến khi chín tới.", note: "Mẹo: Thêm một chút muối vào nước luộc để mỳ thêm đậm đà."),
+        const SizedBox(height: 16),
+        _buildStepItem(2, "Thái nhỏ cà chua và tỏi. Phi thơm tỏi với dầu ô liu."),
+        const SizedBox(height: 16),
+        _buildStepItem(3, "Cho cà chua vào xào chín mềm, nêm gia vị vừa ăn."),
+        const SizedBox(height: 16),
+        _buildStepItem(4, "Trộn mỳ với sốt, thêm húng quế và thưởng thức."),
+      ],
+    );
+  }
+
+  Widget _buildStepItem(int step, String content, {String? note}) {
+  return Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(26),
+    // Thêm margin bottom để các bước cách nhau ra (tuỳ chọn)
+    margin: const EdgeInsets.only(bottom: 16), 
+    decoration: ShapeDecoration(
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        side: const BorderSide(
+          width: 1,
+          color: Color(0xFFE5E7EB), // color-grey-91
+        ),
+        borderRadius: BorderRadius.circular(16),
+      ),
+    ),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      // Sử dụng spacing giống mẫu của bạn (Flutter version mới)
+      spacing: 16, 
+      children: [
+        // --- 1. Phần số thứ tự (Hình tròn xám) ---
+        Container(
+          width: 40,
+          height: 40,
+          alignment: Alignment.center,
+          decoration: ShapeDecoration(
+            color: const Color(0xFFF2F4F6), // color-grey-96
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(100), // Bo tròn hoàn toàn
+            ),
+          ),
+          child: Text(
+            '$step',
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Color(0xFF495565), // color-azure-34
+              fontSize: 16,
+              fontFamily: 'Inter',
+              fontWeight: FontWeight.w400,
+              height: 1.50,
+            ),
+          ),
+        ),
+
+        // --- 2. Phần nội dung chính ---
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            spacing: 7.4, // Khoảng cách giữa tiêu đề và nội dung
+            children: [
+              // Label "Bước X"
+              Text(
+                'Bước $step',
+                style: const TextStyle(
+                  color: Color(0xFF697282), // color-azure-46
+                  fontSize: 13.30,
+                  fontFamily: 'Inter',
+                  fontWeight: FontWeight.w400,
+                  height: 1.50,
+                ),
+              ),
+              
+              // Nội dung hướng dẫn
+              Text(
+                content,
+                style: const TextStyle(
+                  color: Color(0xFF101727), // color-azure-11
+                  fontSize: 15.10,
+                  fontFamily: 'Inter',
+                  fontWeight: FontWeight.w400,
+                  height: 1.72,
+                ),
+              ),
+
+              // --- 3. Phần Note/Mẹo (Hộp màu vàng) ---
+              // Chỉ hiển thị nếu có truyền vào biến 'note'
+              if (note != null && note.isNotEmpty)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(8),
+                  margin: const EdgeInsets.only(top: 10), // Cách phần text trên một chút
+                  decoration: ShapeDecoration(
+                    color: const Color(0xFFFDFBE8), // color-grey-95 (Yellow tint)
+                    shape: RoundedRectangleBorder(
+                      side: const BorderSide(
+                        width: 1,
+                        color: Color(0xFFFEEF85), // color-yellow-76
+                      ),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: Text(
+                    note,
+                    style: const TextStyle(
+                      color: Color(0xFF101727), // color-azure-11
+                      fontSize: 13,
+                      fontFamily: 'Inter',
+                      fontWeight: FontWeight.w400,
+                      height: 1.54,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+}
 }
