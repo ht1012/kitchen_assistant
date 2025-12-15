@@ -21,6 +21,15 @@ class _RecipeDetailState extends State<RecipeDetail> {
         child: Column(
           children: [
             _buildVideoHeader(),
+            Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildAuthorSection()
+                ],
+              ),
+            ),
           ]
         ),
       ),
@@ -125,6 +134,23 @@ class _RecipeDetailState extends State<RecipeDetail> {
             ],
           ),
         )
+      ],
+    );
+  }
+  // --- CÁC WIDGET CŨ GIỮ NGUYÊN ---
+  Widget _buildAuthorSection() {
+    return Row(
+      children: [
+        const SizedBox(width: 12),
+        const Expanded(
+          child: Text(
+            'Một món mì ống béo ngậy và thơm ngon với cà chua tươi và '
+            'các loại thảo mộc. Món ăn này rất dễ làm và chắc chắn sẽ làm hài lòng cả gia đình bạn.',
+            style: TextStyle(color: Color(0xFF354152), height: 1.5),
+            maxLines: 5,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
       ],
     );
   }
