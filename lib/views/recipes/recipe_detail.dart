@@ -48,6 +48,9 @@ class _RecipeDetailState extends State<RecipeDetail> {
                   const SizedBox(height: 24),
                   // Các phần khác như nguyên liệu, hướng dẫn, v.v.
                   _buildTimeInfoRow(),
+                  const SizedBox(height: 20),
+                  
+                  _buildTabButtons(),
                 ],
               ),
             ),
@@ -216,6 +219,114 @@ class _RecipeDetailState extends State<RecipeDetail> {
     );
   }
 
-  
+  // --- 2. PHẦN TAB BUTTONS (Đã hiệu chỉnh theo style BackgroundHorizontalborder) ---
+Widget _buildTabButtons() {
+  return Container(
+    width: double.infinity,
+    padding: const EdgeInsets.only(top: 15), // Padding top theo mẫu
+    decoration: const BoxDecoration(
+      color: Colors.white, // Nền trắng
+      border: Border(
+        top: BorderSide(
+          width: 1,
+          color: Color(0xFFF2F4F6), // Viền xám nhạt phía trên
+        ),
+      ),
+    ),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Tab 0: Nguyên liệu
+        Expanded(
+          child: _buildSingleTabBtn(
+            text: "Nguyên liệu",
+            index: 0,
+            iconEmoji: null, // Tab này trong mẫu dùng Stack placeholder
+          ),
+        ),
+        
+        // Tab 1: Hướng dẫn
+        Expanded(
+          child: _buildSingleTabBtn(
+            text: "Hướng dẫn",
+            index: 1,
+            iconEmoji: "📝", // Icon theo mẫu
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+Widget _buildSingleTabBtn({
+  required String text, 
+  required int index, 
+  String? iconEmoji
+}) {
+  bool isActive = _selectedTab == index;
+
+  return GestureDetector(
+    onTap: () {
+      setState(() {
+        _selectedTab = index;
+      });
+    },
+    // Sử dụng behavior này để bấm được vào cả vùng trống xung quanh text
+    behavior: HitTestBehavior.opaque, 
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Phần nội dung (Icon + Text)
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (iconEmoji != null) ...[
+              Text(
+                iconEmoji,
+                style: const TextStyle(fontSize: 16),
+              ),
+              const SizedBox(width: 8),
+            ],
+            Text(
+              text,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                // Logic màu sắc: Active -> Xanh lá đậm, Inactive -> Xám
+                color: isActive 
+                    ? const Color(0xFF00A63D) 
+                    : const Color(0xFF6A7282),
+                fontSize: 15, // Làm tròn từ 14.90/14.60
+                fontFamily: 'Inter',
+                fontWeight: FontWeight.w400,
+                height: 1.6,
+              ),
+            ),
+          ],
+        ),
+        
+        const SizedBox(height: 12), // Khoảng cách giữa text và gạch chân (runSpacing)
+
+        // Thanh gạch chân (Chỉ hiện khi Active)
+        isActive
+            ? Container(
+                height: 2,
+                width: double.infinity, // Full width của tab
+                margin: const EdgeInsets.symmetric(horizontal: 10), // Thụt vào một chút cho đẹp (tuỳ chọn)
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment(0.00, 0.50),
+                    end: Alignment(1.00, 0.50),
+                    colors: [
+                      Color(0xFF05DF72), 
+                      Color(0xFF00C850)
+                    ],
+                  ),
+                ),
+              )
+            : const SizedBox(height: 2), // Giữ chiều cao để không bị giật layout
+      ],
+    ),
+  );
+}
 
 }
