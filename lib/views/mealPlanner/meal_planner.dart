@@ -6,513 +6,373 @@ class PlanPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
-        children: [
-          // Header section
-          _buildHeader(),
-          // Main content
-          Expanded(
-            child: _buildMealPlanGrid(),
+      body: SingleChildScrollView(
+        child: Container(
+          width: double.infinity,
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Colors.white, Colors.white],
+            ),
           ),
-        ],
+          child: Column(
+            children: [
+              
+              _buildHeader(),
+
+              
+              _buildWeeklyPlan(),
+
+            ],
+          ),
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          
+        },
+        backgroundColor: const Color(0xFF7BF1A8),
+        shape: const CircleBorder(), 
+        child: const Icon(
+          Icons.add,
+          color: Colors.white, 
+          size: 28,
+        ),
       ),
     );
   }
 
+  
   Widget _buildHeader() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(24, 50, 24, 24),
+      padding: const EdgeInsets.all(24),
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(
-          bottom: BorderSide(color: Color(0xFFF2F4F6)),
-        ),
+        border: Border(bottom: BorderSide(color: Color(0xFFF2F4F6))),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Icon app
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF7BF1A8), Color(0xFF7BF1A8)],
-                  ),
-                  borderRadius: BorderRadius.circular(12),
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF7BF1A8), Color(0xFF7BF1A8)],
                 ),
-                child: Center(
-                  child: Image.asset(
-                    'assets/images/icon_mealPlane.png',
-                    width: 18,
-                    height: 18,
-                    fit: BoxFit.contain,
-                    color: Colors.white, // bỏ nếu không cần đổi màu
-                  ),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: Image.asset(
+                  'assets/images/icon_mealPlane.png',
+                  color: Colors.white,
+                  fit: BoxFit.contain,
                 ),
               ),
+            ),
               const SizedBox(width: 12),
-
-              // Title
               const Text(
                 'Lập kế hoạch bữa ăn',
                 style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w600,
                   color: Color(0xFF101727),
                 ),
               ),
             ],
           ),
-
           const SizedBox(height: 16),
-
           const Text(
-            '0/21 bữa ăn đã lên kế hoạch',
-            style: TextStyle(
-              fontSize: 15,
-              color: Color(0xFF495565),
-            ),
+            '0/21 bữa ăn đã lên kế hoạch cho tuần này',
+            style: TextStyle(fontSize: 14, color: Color(0xFF495565)),
           ),
-        ],
-      ),
-    );
-  }
-
-  // Lưới kế hoạch bữa ăn
-  Widget _buildMealPlanGrid() {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xFFF0FDF4), Colors.white],
-        ),
-      ),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            // Header các loại bữa ăn
-            _buildMealTypeHeaders(),
-            const SizedBox(height: 24),
-            // Lưới 7 ngày
-            ..._buildWeekDays(),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // Header loại bữa ăn
-  Widget _buildMealTypeHeaders() {
-    return Row(
-      children: [
-        const SizedBox(width: 55), // Khoảng trống cho cột ngày
-        Expanded(
-          child: _buildMealTypeHeader('🌅 BREAKFAST'),
-        ),
-        Expanded(
-          child: _buildMealTypeHeader('☀️ LUNCH'),
-        ),
-        Expanded(
-          child: _buildMealTypeHeader('🌙 DINNER'),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMealTypeHeader(String title) {
-    return Text(
-      title,
-      textAlign: TextAlign.center,
-      style: const TextStyle(
-        fontSize: 11,
-        color: Color(0xFF697282),
-        fontWeight: FontWeight.w400,
-        letterSpacing: 0.3,
-      ),
-    );
-  }
-
-  // Xây dựng 7 ngày trong tuần
-  List<Widget> _buildWeekDays() {
-    final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    final dayNames = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
-    
-    return List.generate(7, (index) {
-      return Padding(
-        padding: const EdgeInsets.only(bottom: 16),
-        child: _buildDayRow(days[index], dayNames[index], index == 1), // Thứ 3 có món ăn
-      );
-    });
-  }
-
-  // Hàng của mỗi ngày
-  Widget _buildDayRow(String dayCode, String dayName, bool hasFood) {
-    return Row(
-      children: [
-        // Nhãn ngày
-        _buildDayLabel(dayCode),
-        const SizedBox(width: 16),
-        // 3 bữa ăn
-        Expanded(
-          child: Row(
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Expanded(child: _buildMealCard(hasFood && dayCode == 'Tue' ? 'Cá hồi nướng' : null)),
+              IconButton(
+                onPressed: () {},
+                icon: const Icon(Icons.arrow_back_ios),
+              ),
+
+              Image.asset(
+                'assets/images/icon_mealPlane.png',
+                width: 20,
+                height: 20,
+                fit: BoxFit.contain,
+                color: const Color(0xFF7BF1A8),
+                colorBlendMode: BlendMode.srcIn,
+              ),
+
               const SizedBox(width: 8),
-              Expanded(child: _buildMealCard(null)),
-              const SizedBox(width: 8),
-              Expanded(child: _buildMealCard(null)),
+
+              const Text(
+                '12 Thg 8 – 18 Thg 8',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+
+              IconButton(
+                onPressed: () {},
+                icon: const Icon(Icons.arrow_forward_ios),
+              ),
             ],
           ),
-        ),
-      ],
+
+        ],
+      ),
     );
   }
 
-  // Nhãn ngày trong tuần
-  Widget _buildDayLabel(String day) {
+  
+  Widget _buildWeeklyPlan() {
+    final List<Map<String, dynamic>> weekDays = [
+      {'day': 'Thứ 2', 'date': '12'},
+      {'day': 'Thứ 3', 'date': '13'},
+      {'day': 'Thứ 4', 'date': '14'},
+      {'day': 'Thứ 5', 'date': '15'},
+      {'day': 'Thứ 6', 'date': '16'},
+      {'day': 'Thứ 7', 'date': '17'},
+      {'day': 'Chủ nhật', 'date': '18'},
+    ];
+
+    return Column(
+      children: weekDays.map((dayInfo) => _buildDayCard(dayInfo)).toList(),
+    );
+  }
+
+  
+  Widget _buildDayCard(Map<String, dynamic> dayInfo) {
     return Container(
-      width: 39,
-      height: 36,
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF05DF72), Color(0xFF00C850)],
-        ),
-        borderRadius: BorderRadius.circular(14),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1), // Fixed deprecated withOpacity
-            blurRadius: 2,
-            offset: const Offset(0, 1),
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
-      ),
-      child: Center(
-        child: Text(
-          day,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 13,
-            fontWeight: FontWeight.w400,
-          ),
-        ),
-      ),
-    );
-  }
-
-  // Card bữa ăn
-  Widget _buildMealCard(String? mealName) {
-    return Container(
-      height: 84,
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFB),
-        border: Border.all(
-          color: const Color(0xFFD0D5DB),
-          width: 2,
-        ),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: mealName != null
-          ? _buildMealContent(mealName)
-          : _buildAddMealContent(),
-    );
-  }
-
-  // Nội dung khi có món ăn
-  Widget _buildMealContent(String mealName) {
-    return Stack(
-      children: [
-        Center(
-          child: Text(
-            mealName,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 11,
-              color: Color(0xFF697282),
-            ),
-          ),
-        ),
-        Positioned(
-          top: 6,
-          right: 8,
-          child: GestureDetector(
-            onTap: () {
-              // Xóa món ăn
-            },
-            child: const Text(
-              'X',
-              style: TextStyle(
-                fontSize: 12,
-                color: Color(0xFF354152),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // Nội dung thêm món ăn
-  Widget _buildAddMealContent() {
-    return Builder(
-      builder: (context) => Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          GestureDetector(
-            onTap: () => _showRecipesModal(context),
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: const Color(0xFFE5E7EB),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Icon(
-                Icons.add,
-                color: Color(0xFF9CA3AF),
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Add meal',
-            style: TextStyle(
-              fontSize: 11,
-              color: Color(0xFF697282),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showRecipesModal(BuildContext context) {
-    showGeneralDialog(
-      context: context,
-      barrierDismissible: true,
-      barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
-      barrierColor: Colors.black.withValues(alpha: 0.8), // Fixed deprecated withOpacity
-      transitionDuration: const Duration(milliseconds: 300),
-      pageBuilder: (BuildContext buildContext, Animation animation, Animation secondaryAnimation) {
-        return Align(
-          alignment: Alignment.bottomCenter,
-          child: const Recipes(),
-        );
-      },
-      transitionBuilder: (context, animation, secondaryAnimation, child) {
-        return SlideTransition(
-          position: Tween<Offset>(
-            begin: const Offset(0, 1),
-            end: Offset.zero,
-          ).animate(CurvedAnimation(
-            parent: animation,
-            curve: Curves.easeInOut,
-          )),
-          child: child,
-        );
-      },
-    );
-  }
-}
-
-class Recipes extends StatelessWidget {
-  const Recipes({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 390,
-      height: 705,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(24),
-          topRight: Radius.circular(24),
-        ),
       ),
       child: Column(
         children: [
-          // Header với nút đóng
-          _buildHeader(context),
           
-          // Danh sách công thức
-          Expanded(
-            child: _buildRecipeList(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHeader(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(24.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          const Text(
-            'Công thức nấu ăn',
-            style: TextStyle(
-              color: Color(0xFF101727),
-              fontSize: 24,
-              fontFamily: 'Inter',
-              fontWeight: FontWeight.w400,
-              decoration: TextDecoration.none,
-            ),
-          ),
-          GestureDetector(
-            onTap: () => Navigator.of(context).pop(),
-            child: Container(
-              width: 67,
-              height: 47,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF2F4F6),
-                borderRadius: BorderRadius.circular(25),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: const BoxDecoration(
+              color: Color(0xFFF8FAFB),
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(16),
+                topRight: Radius.circular(16),
               ),
-              child: const Center(
-                child: Text(
-                  'X',
-                  style: TextStyle(
-                    color: Color(0xFF354152),
-                    fontSize: 32,
-                    fontWeight: FontWeight.w400,
-                    decoration: TextDecoration.none,
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: const Color(0xFFE5E7EB)),
                   ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRecipeList() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24.0),
-      child: Column(
-        children: [
-          _buildRecipeCard(),
-          const SizedBox(height: 16),
-          _buildRecipeCard(),
-          const SizedBox(height: 16),
-          _buildRecipeCard(),
-          const SizedBox(height: 16),
-          _buildRecipeCard(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRecipeCard() {
-    return Container(
-      height: 116,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(
-          width: 2,
-          color: const Color(0xFFE5E7EB),
-        ),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(14.0),
-        child: Row(
-          children: [
-            // Hình ảnh món ăn
-            Container(
-              width: 83,
-              height: 79,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                image: const DecorationImage(
-                  image: AssetImage('assets/images/img_healthy_buddha_bowl.png'),
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ),
-            
-            const SizedBox(width: 16),
-            
-            // Thông tin món ăn
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Cá hồi nướng với rau',
-                    style: TextStyle(
-                      color: Color(0xFF101727),
-                      fontSize: 15.40,
-                      fontFamily: 'Inter',
-                      fontWeight: FontWeight.w400,
-                      decoration: TextDecoration.none,
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 5),
-                  
-                  // Tag loại món
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF3F4F6),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Text(
-                      'American',
-                      style: TextStyle(
-                        color: Color(0xFF354152),
-                        fontSize: 11.40,
-                        fontFamily: 'Inter',
-                        fontWeight: FontWeight.w400,
-                        decoration: TextDecoration.none,
+                  child: Center(
+                    child: Text(
+                      dayInfo['date'],
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),
-                  
-                  const Spacer(),
-                  
-                  // Thời gian nấu
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFECD4),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Image.asset(
-                          'assets/images/icon_time_cook.png',
-                          width: 12,
-                          height: 12,
-                          fit: BoxFit.contain,
-                        ),
-                        const SizedBox(width: 4),
-                        const Text(
-                          '25 phút',
-                          style: TextStyle(
-                            color: Color(0xFFC93400),
-                            fontSize: 10.90,
-                            fontFamily: 'Inter',
-                            fontWeight: FontWeight.w400,
-                            decoration: TextDecoration.none,
-                          ),
-                        ),
-                      ],
-                    ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  dayInfo['day'],
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
                   ),
-                ],
+                ),
+              ],
+            ),
+          ),
+
+          
+          _buildMealSection(
+            '☀️',
+            'Sáng',
+            dayInfo['day'] == 'Thứ 2' ? 'Phở bò' : null,
+          ),
+          _buildMealSection(
+            '🌤',
+            'Trưa',
+            dayInfo['day'] == 'Thứ 2' ? ['Cơm gà xối mỡ', 'Rau xào'] : null,
+          ),
+          _buildMealSection(
+            '🌙',
+            'Tối',
+            dayInfo['day'] == 'Thứ 4' ? 'Phở bò' : null,
+          ),
+        ],
+      ),
+    );
+  }
+
+  
+  Widget _buildMealSection(String emoji, String mealTime, dynamic meals) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(emoji, style: const TextStyle(fontSize: 16)),
+              const SizedBox(width: 8),
+              Text(
+                mealTime,
+                style: const TextStyle(fontSize: 14, color: Color(0xFF495565)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+
+          if (meals != null) ...[
+            if (meals is String)
+              _buildMealItem(meals, false)
+            else if (meals is List)
+              ...meals
+                  .map((meal) => _buildMealItem(meal, meal == 'Cơm gà xối mỡ'))
+                  .toList(),
+            _buildAddMealButton(),
+          ] else
+            _buildEmptyMealSlot(),
+        ],
+      ),
+    );
+  }
+
+  
+  Widget _buildMealItem(String mealName, bool hasWarning) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: hasWarning ? Colors.white : const Color(0x4CA7D4B9),
+        borderRadius: BorderRadius.circular(10),
+        border: hasWarning ? Border.all(color: const Color(0xFFE5E7EB)) : null,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              mealName,
+              style: const TextStyle(fontSize: 16, color: Color(0xFF1D2838)),
+            ),
+            GestureDetector(
+              onTap: () {
+                
+              },
+              child: const Text(
+                'X',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF1D2838),
+                ),
               ),
             ),
           ],
+        ),
+          if (hasWarning) ...[
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Image.asset(
+                  'assets/images/icon_conthieu.png',
+                  width: 14,
+                  height: 14,
+                  fit: BoxFit.contain,
+                  color: const Color(0xFFFFB84D), 
+                  colorBlendMode: BlendMode.srcIn,
+                ),
+                const SizedBox(width: 4),
+                const Text(
+                  'Thiếu 2 nguyên liệu',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFFFFB84D),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  
+  Widget _buildAddMealButton() {
+    return Container(
+      width: double.infinity,
+      height: 40,
+      decoration: BoxDecoration(
+        border: Border.all(color: const Color(0xFFD0D5DB)),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: TextButton(
+        onPressed: () {
+          
+        },
+        child: const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.add, size: 16, color: Color(0xFF99A1AE)),
+            SizedBox(width: 8),
+            Text(
+              'Thêm món',
+              style: TextStyle(color: Color(0xFF99A1AE), fontSize: 14),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  
+  Widget _buildEmptyMealSlot() {
+    return Container(
+      width: double.infinity,
+      height: 40,
+      decoration: BoxDecoration(
+        border: Border.all(color: const Color(0xFFD0D5DB)),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: TextButton(
+        onPressed: () {
+          
+        },
+        child: const Text(
+          'Chưa có món',
+          style: TextStyle(color: Color(0xFF99A1AE), fontSize: 14),
         ),
       ),
     );
