@@ -1,7 +1,15 @@
 import 'package:flutter/material.dart';
-class add_ingre extends StatelessWidget {
-  const add_ingre({super.key});
 
+class AddIngredientPage extends StatefulWidget {
+  final Map<String, String>? ingredientData;
+
+  const AddIngredientPage({super.key, this.ingredientData});
+
+  @override
+  State<AddIngredientPage> createState() => _AddIngredientPageState();
+}
+
+class _AddIngredientPageState extends State<AddIngredientPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -16,23 +24,31 @@ class add_ingre extends StatelessWidget {
         child: SafeArea(
           child: Column(
             children: [
+              // ===== Header =====
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: const [
-                    Icon(Icons.arrow_back),
-                    Text(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                    const Text(
                       'Thêm nguyên liệu',
                       style: TextStyle(
                         fontSize: 24,
                         color: Color(0xFF075B33),
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                    SizedBox(width: 24),
+                    const SizedBox(width: 48),
                   ],
                 ),
               ),
+
+              // ===== Body =====
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -40,6 +56,7 @@ class add_ingre extends StatelessWidget {
                     children: [
                       // Image
                       Stack(
+                        alignment: Alignment.bottomRight,
                         children: [
                           ClipRRect(
                             borderRadius: BorderRadius.circular(16),
@@ -50,15 +67,12 @@ class add_ingre extends StatelessWidget {
                               fit: BoxFit.cover,
                             ),
                           ),
-                          Positioned(
-                            bottom: -8,
-                            right: -8,
-                            child: CircleAvatar(
-                              radius: 20,
-                              backgroundColor: const Color(0xFF00C850),
-                              child: const Icon(Icons.add, color: Colors.white),
-                            ),
-                          )
+                          CircleAvatar(
+                            radius: 20,
+                            backgroundColor: const Color(0xFF00C850),
+                            child:
+                                const Icon(Icons.add, color: Colors.white),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 24),
@@ -86,7 +100,8 @@ class add_ingre extends StatelessWidget {
                             child: _inputField(
                               label: 'Đơn vị',
                               required: true,
-                              suffix: const Icon(Icons.keyboard_arrow_down),
+                              suffix:
+                                  const Icon(Icons.keyboard_arrow_down),
                             ),
                           ),
                         ],
@@ -96,19 +111,22 @@ class add_ingre extends StatelessWidget {
                       _inputField(
                         label: 'Hạn sử dụng',
                         required: true,
-                        suffix: const Icon(Icons.calendar_today),
+                        suffix:
+                            const Icon(Icons.calendar_today, size: 18),
                       ),
                     ],
                   ),
                 ),
               ),
+
+              // ===== Footer =====
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: Row(
                   children: [
                     Expanded(
                       child: OutlinedButton(
-                        onPressed: () {}, 
+                        onPressed: () => Navigator.pop(context),
                         style: OutlinedButton.styleFrom(
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
@@ -122,7 +140,8 @@ class add_ingre extends StatelessWidget {
                       child: ElevatedButton(
                         onPressed: () {},
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF00C850),
+                          backgroundColor:
+                              const Color(0xFF00C850),
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
@@ -141,7 +160,8 @@ class add_ingre extends StatelessWidget {
     );
   }
 
-static Widget _inputField({
+  // ===== Input Field =====
+  Widget _inputField({
     required String label,
     bool required = false,
     Widget? suffix,
@@ -179,7 +199,13 @@ static Widget _inputField({
           ),
           child: Row(
             children: [
-              const Expanded(child: SizedBox()),
+              const Expanded(
+                child: TextField(
+                  decoration: InputDecoration(
+                    border: InputBorder.none,
+                  ),
+                ),
+              ),
               if (suffix != null) suffix,
             ],
           ),
