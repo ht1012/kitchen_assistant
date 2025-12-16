@@ -24,7 +24,12 @@ class _AddIngredientPageState extends State<AddIngredientPage> {
       text: isEditMode ? widget.ingredientData!['quantity'] : ""
     );
   }
-  
+  void dispose() {
+    nameController.dispose();
+    quantityController.dispose();
+    super.dispose();
+  }
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
@@ -49,8 +54,8 @@ class _AddIngredientPageState extends State<AddIngredientPage> {
                       icon: const Icon(Icons.arrow_back),
                       onPressed: () => Navigator.pop(context),
                     ),
-                    const Text(
-                      'Thêm nguyên liệu',
+                    Text(
+                      isEditMode ? 'Sửa nguyên liệu' : 'Thêm nguyên liệu',
                       style: TextStyle(
                         fontSize: 24,
                         color: Color(0xFF075B33),
@@ -91,7 +96,11 @@ class _AddIngredientPageState extends State<AddIngredientPage> {
                       ),
                       const SizedBox(height: 24),
 
-                      _inputField(label: 'Tên nguyên liệu', required: true),
+                      _inputField(
+                        label: 'Tên nguyên liệu', 
+                        required: true,
+                        controller: nameController
+                      ),
                       const SizedBox(height: 12),
 
                       _inputField(
@@ -107,6 +116,7 @@ class _AddIngredientPageState extends State<AddIngredientPage> {
                             child: _inputField(
                               label: 'Số lượng',
                               required: true,
+                              controller: quantityController,
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -161,7 +171,7 @@ class _AddIngredientPageState extends State<AddIngredientPage> {
                             borderRadius: BorderRadius.circular(16),
                           ),
                         ),
-                        child: const Text('Thêm nguyên liệu'),
+                        child: Text(isEditMode ? 'Lưu thay đổi' : 'Thêm nguyên liệu'),
                       ),
                     ),
                   ],
@@ -175,10 +185,11 @@ class _AddIngredientPageState extends State<AddIngredientPage> {
   }
 
   // ===== Input Field =====
-  Widget _inputField({
+  static Widget _inputField({
     required String label,
     bool required = false,
     Widget? suffix,
+    TextEditingController? controller,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -211,17 +222,14 @@ class _AddIngredientPageState extends State<AddIngredientPage> {
             border: Border.all(color: const Color(0xFF83F2AD)),
             borderRadius: BorderRadius.circular(16),
           ),
-          child: Row(
-            children: [
-              const Expanded(
-                child: TextField(
-                  decoration: InputDecoration(
-                    border: InputBorder.none,
-                  ),
-                ),
-              ),
-              if (suffix != null) suffix,
-            ],
+          child: TextField(
+            controller: controller, // ⭐ GẮN CONTROLLER
+            decoration: InputDecoration(
+              border: InputBorder.none,
+              suffixIcon: suffix,
+              hintText: "Nhập $label",
+              contentPadding: EdgeInsets.symmetric(vertical: 12),
+            ),
           ),
         ),
       ],
