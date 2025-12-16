@@ -10,7 +10,21 @@ class AddIngredientPage extends StatefulWidget {
 }
 
 class _AddIngredientPageState extends State<AddIngredientPage> {
+  late TextEditingController nameController;
+  late TextEditingController quantityController;
+  bool get isEditMode => widget.ingredientData != null;
+
   @override
+  void initState(){
+    super.initState();
+    nameController = TextEditingController(
+      text: isEditMode ? widget.ingredientData!['name'] : ""
+    );
+    quantityController = TextEditingController(
+      text: isEditMode ? widget.ingredientData!['quantity'] : ""
+    );
+  }
+  
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
