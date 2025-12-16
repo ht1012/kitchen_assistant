@@ -30,7 +30,7 @@ class PlanPage extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          
+          _showDishSelectionForm(context);
         },
         backgroundColor: const Color(0xFF7BF1A8),
         shape: const CircleBorder(), 
@@ -42,6 +42,29 @@ class PlanPage extends StatelessWidget {
       ),
     );
   }
+
+void _showDishSelectionForm(BuildContext context) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (context) => DraggableScrollableSheet(
+      initialChildSize: 0.9,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      builder: (context, scrollController) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+        ),
+        child: const DishSelectionForm(),
+      ),
+    ),
+  );
+}
 
   
   Widget _buildHeader() {
@@ -158,7 +181,7 @@ class PlanPage extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -255,8 +278,7 @@ class PlanPage extends StatelessWidget {
               _buildMealItem(meals, false)
             else if (meals is List)
               ...meals
-                  .map((meal) => _buildMealItem(meal, meal == 'Cơm gà xối mỡ'))
-                  .toList(),
+                  .map((meal) => _buildMealItem(meal, meal == 'Cơm gà xối mỡ')),
             _buildAddMealButton(),
           ] else
             _buildEmptyMealSlot(),
@@ -374,6 +396,212 @@ class PlanPage extends StatelessWidget {
           'Chưa có món',
           style: TextStyle(color: Color(0xFF99A1AE), fontSize: 14),
         ),
+      ),
+    );
+  }
+}
+
+class DishSelectionForm extends StatelessWidget {
+  const DishSelectionForm({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(24),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Chọn món ăn',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF101727),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close, size: 24),
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 16),
+              
+              
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFB),
+                  border: Border.all(color: const Color(0xFFE5E7EB)),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.search, color: Color(0xFF697282), size: 20),
+                    SizedBox(width: 8),
+                    Text(
+                      'Tìm món ăn...',
+                      style: TextStyle(
+                        color: Color(0xFF697282),
+                        fontSize: 15,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              const SizedBox(height: 8),
+              
+              
+              const Text(
+                'Kéo thả món ăn vào lịch hoặc nhấn để chọn',
+                style: TextStyle(
+                  color: Color(0xFF697282),
+                  fontSize: 15,
+                ),
+              ),
+              
+              const SizedBox(height: 16),
+              
+              
+              Column(
+                children: [
+                  _buildDishItem(
+                    'Phở bò',
+                    'assets/images/img_creamy_pasta_primavera.png',
+                    hasEnoughIngredients: true,
+                  ),
+                  _buildDishItem(
+                    'Phở bò',
+                    'assets/images/img_creamy_pasta_primavera.png',
+                    hasEnoughIngredients: false,
+                    missingCount: 2,
+                  ),
+                  _buildDishItem(
+                    'Bánh mỳ thịt',
+                    'assets/images/img_creamy_pasta_primavera.png',
+                    hasEnoughIngredients: true,
+                  ),
+                  _buildDishItem(
+                    'Phở bò',
+                    'assets/images/img_creamy_pasta_primavera.png',
+                    hasEnoughIngredients: false,
+                    missingCount: 2,
+                  ),
+                  _buildDishItem(
+                    'Gỏi cuốn',
+                    'assets/images/img_creamy_pasta_primavera.png',
+                    hasEnoughIngredients: true,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDishItem(
+    String dishName,
+    String imagePath, {
+    required bool hasEnoughIngredients,
+    int? missingCount,
+  }) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: hasEnoughIngredients 
+            ? const Color(0xFFF0FDF4) 
+            : const Color(0xFFFEF9C2),
+        border: Border.all(
+          color: hasEnoughIngredients 
+              ? const Color(0xFFB8F7CF) 
+              : const Color(0xFFFFDF20),
+          width: 2,
+        ),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          
+          Container(
+            width: 60,
+            height: 57,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              image: DecorationImage(
+                image: AssetImage(imagePath),
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+          
+          const SizedBox(width: 12),
+          
+          
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  dishName,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF101727),
+                  ),
+                ),
+                
+                const SizedBox(height: 4),
+                
+                Row(
+                  children: [
+                  Image.asset(
+                    hasEnoughIngredients
+                        ? 'assets/images/icon_check.png'
+                        : 'assets/images/icon_conthieu.png',
+                    width: 16,
+                    height: 16,
+                    fit: BoxFit.contain,
+                  ),
+                    
+                    const SizedBox(width: 4),
+                    
+                    Text(
+                      hasEnoughIngredients 
+                          ? 'Đủ nguyên liệu'
+                          : 'Thiếu $missingCount nguyên liệu',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: hasEnoughIngredients 
+                            ? const Color(0xFFA8D5BA) 
+                            : const Color(0xFFA65F00),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
