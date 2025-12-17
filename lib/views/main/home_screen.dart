@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../widgets/bottom_nav.dart';
 import '../shoppingList/shopping_list.dart';
+import '../mealPlanner/meal_planner.dart';
 
+import '../virtualPantry/pantry_screen.dart';
 class Dashboard extends StatefulWidget {
   const Dashboard({super.key});
 
@@ -17,11 +19,11 @@ class _DashboardState extends State<Dashboard> {
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,
-        children: const [
+        children:  [
           _HomePage(),        // Trang chủ
-          _PantryPage(),      // Kho
+          const PantryPage(),      // Kho
           ShoppingPage(),    // Mua sắm
-          _PlanPage(),        // Kế hoạch
+          PlanPage(),        // Kế hoạch
           _NotificationPage() // Thông báo
         ],
       ),
@@ -74,17 +76,6 @@ class _PantryPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Center(
       child: Text('Màn hình Kho', style: TextStyle(fontSize: 22)),
-    );
-  }
-}
-
-class _PlanPage extends StatelessWidget {
-  const _PlanPage();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Kế hoạch', style: TextStyle(fontSize: 22)),
     );
   }
 }
