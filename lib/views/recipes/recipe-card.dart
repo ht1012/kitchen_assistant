@@ -54,7 +54,7 @@ class RecipeCard extends StatelessWidget {
                 child: Image.asset(image, height: 180, width: double.infinity, fit: BoxFit.cover),
               ),
               Positioned(
-                top: 10, left: 10,
+                bottom: 10, left: 10,
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(20)),
