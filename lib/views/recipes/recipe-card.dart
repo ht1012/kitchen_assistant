@@ -19,6 +19,19 @@ class RecipeCard extends StatelessWidget {
     required this.tags,
     required this.matchPercent,
   });
+  Color _getTagColor(String tag) {
+    // Hàm lấy màu sắc dựa trên thẻ
+    // Ví dụ đơn giản, bạn có thể mở rộng theo nhu cầu
+    if (tag == 'Dễ') {
+      return Colors.green[100]!;
+    } else if (tag == 'Trung bình') {
+      return Colors.orange[100]!;
+    } else if (tag == 'Cao') {
+      return Colors.red[100]!;
+    } else {
+      return Colors.grey[200]!;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -62,7 +75,10 @@ class RecipeCard extends StatelessWidget {
                   children: tags.map((t) => Container(
                     margin: const EdgeInsets.only(right: 8),
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(color: const Color(0xFFF2F4F6), borderRadius: BorderRadius.circular(8)),
+                    decoration: BoxDecoration(
+                      color: _getTagColor(t),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                     child: Text(t, style: const TextStyle(fontSize: 11)),
                   )).toList(),
                 ),
