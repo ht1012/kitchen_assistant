@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import '../widgets/bottom_nav.dart';
+import '../notification/notification.dart';
+import '../shoppingList/shopping_list.dart';
+import '../mealPlanner/meal_planner.dart';
+
 import '../virtualPantry/pantry_screen.dart';
 class Dashboard extends StatefulWidget {
   const Dashboard({super.key});
@@ -7,7 +11,7 @@ class Dashboard extends StatefulWidget {
   @override
   State<Dashboard> createState() => _DashboardState();
 }
-
+  
 class _DashboardState extends State<Dashboard> {
   int _currentIndex = 0;
 
@@ -18,10 +22,10 @@ class _DashboardState extends State<Dashboard> {
         index: _currentIndex,
         children:  [
           _HomePage(),        // Trang chủ
-          const PantryPage(),      // Kho
-          _ShoppingPage(),    // Mua sắm
-          _PlanPage(),        // Kế hoạch
-          _NotificationPage() // Thông báo
+          PantryPage(),      // Kho
+          ShoppingPage(),    // Mua sắm
+          PlanPage(),        // Kế hoạch
+          NotificationPage() // Thông báo
         ],
       ),
       bottomNavigationBar: BottomNav(
@@ -65,50 +69,6 @@ class _HomePage extends StatelessWidget {
   }
 }
 
-
-class _PantryPage extends StatelessWidget {
-  const _PantryPage();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Màn hình Kho', style: TextStyle(fontSize: 22)),
-    );
-  }
-}
-
-class _ShoppingPage extends StatelessWidget {
-  const _ShoppingPage();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Mua sắm', style: TextStyle(fontSize: 22)),
-    );
-  }
-}
-
-class _PlanPage extends StatelessWidget {
-  const _PlanPage();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Kế hoạch', style: TextStyle(fontSize: 22)),
-    );
-  }
-}
-
-class _NotificationPage extends StatelessWidget {
-  const _NotificationPage();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Thông báo', style: TextStyle(fontSize: 22)),
-    );
-  }
-}
 
 class _Header extends StatelessWidget {
   const _Header();
