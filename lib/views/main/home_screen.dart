@@ -22,7 +22,7 @@ class _DashboardState extends State<Dashboard> {
         index: _currentIndex,
         children:  [
           _HomePage(),        // Trang chủ
-          const PantryPage(),      // Kho
+          PantryPage(),      // Kho
           ShoppingPage(),    // Mua sắm
           PlanPage(),        // Kế hoạch
           NotificationPage() // Thông báo
@@ -69,17 +69,6 @@ class _HomePage extends StatelessWidget {
   }
 }
 
-
-class _PantryPage extends StatelessWidget {
-  const _PantryPage();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Màn hình Kho', style: TextStyle(fontSize: 22)),
-    );
-  }
-}
 
 class _Header extends StatelessWidget {
   const _Header();
