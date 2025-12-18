@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import 'add_ingredients.dart';
 class PantryPage extends StatelessWidget {
   const PantryPage({super.key});
   static const List<Map<String, String>> fruits = [
@@ -58,7 +58,7 @@ class PantryPage extends StatelessWidget {
     },
   ];
 
-  Widget ingredientSection(String title, List<Map<String, String>> items) {
+  Widget ingredientSection(BuildContext context,String title, List<Map<String, String>> items) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -69,13 +69,25 @@ class PantryPage extends StatelessWidget {
         ),
         SizedBox(height: 12),
         Column(
-          children: items.map((item) => IngredientCard(
-            name: item['name']!,
-            quantity: item['quantity']!,
-            expiry: item['expiry']!,
-            status: item['status']!,
-            color: Color(int.parse(item['color']!)),
-            image: item['image']!,
+          children: items.map((item) => InkWell(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => AddIngredientPage(
+                    ingredientData: item, // ⭐ TRUYỀN DỮ LIỆU
+                  ),
+                ),
+              );
+            },
+            child: IngredientCard(
+              name: item['name']!,
+              quantity: item['quantity']!,
+              expiry: item['expiry']!,
+              status: item['status']!,
+              color: Color(int.parse(item['color']!)),
+              image: item['image']!,
+            ),
           )).toList(),
         )
       ],
@@ -84,7 +96,18 @@ class PantryPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // ===== Nền Gradient =====
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: const Color(0xFF00C850),
+        child: const Icon(Icons.add, color: Colors.white),
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const AddIngredientPage(),
+            ),
+          );
+        },
+      ),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -142,9 +165,9 @@ class PantryPage extends StatelessWidget {
                     ),
                   ],
                 ),
-                ingredientSection("Quả & rau", fruits),
-                ingredientSection("Trứng & Sữa", dairy),
-                ingredientSection("Thịt & Cá", meatAndFish),
+                ingredientSection(context,"Quả & rau", fruits),
+                ingredientSection(context,"Trứng & Sữa", dairy),
+                ingredientSection(context,"Thịt & Cá", meatAndFish),
               ],
             ),
           ),
