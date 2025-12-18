@@ -9,7 +9,7 @@ class RecipeCard extends StatelessWidget {
   final String steps;
   final List<String> tags;
   final int matchPercent;
-
+  
   const RecipeCard({
     super.key,
     required this.title,
@@ -59,6 +59,18 @@ class RecipeCard extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(20)),
                   child: Text(time, style: const TextStyle(color: Colors.white, fontSize: 12)),
+                ),
+              ),
+
+              Positioned(
+                top: 10, right: 10,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: matchPercent == 100 ? Colors.green : Colors.orange,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(matchPercent == 100 ? '7/7' : '5/7', style: const TextStyle(color: Colors.white, fontSize: 12)),
                 ),
               ),
             ],
