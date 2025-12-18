@@ -43,22 +43,15 @@ class _RecipeDetailState extends State<RecipeDetail> {
             Padding(
               padding: const EdgeInsets.all(0),
               child: Column(
+                spacing: 10,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildDescribe(),
-                  const SizedBox(height: 24),
                   // Các phần khác như nguyên liệu, hướng dẫn, v.v.
                   _buildTimeInfoRow(),
-                  const SizedBox(height: 20),
                   
                   _buildTabButtons(),
-                  const SizedBox(
-                    height: 20,
-                    child: Divider(
-                      color: Color(0xFFF2F4F6),
-                      thickness: 1,
-                    ),
-                  ),
+                  
                   
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -72,14 +65,13 @@ class _RecipeDetailState extends State<RecipeDetail> {
                       ],
                     ),
                   ),// Hiển thị nội dung dựa trên Tab đang chọn
-                  const SizedBox(height: 30),
-                  _buildBottomBar(),
                 ],
               ),
             ),
           ]
         ),
       ),
+      bottomNavigationBar: _buildBottomBar(),
     );
   }
 
@@ -254,6 +246,10 @@ Widget _buildTabButtons() {
           width: 1,
           color: Color(0xFFF2F4F6), // Viền xám nhạt phía trên
         ),
+        bottom: BorderSide(
+          width: 1,
+          color: Color(0xFFF2F4F6), // Viền xám nhạt phía dưới
+        ),
       ),
     ),
     child: Row(
@@ -354,11 +350,10 @@ Widget _buildSingleTabBtn({
 
   Widget _buildIngredientsList() {
     return Column(
+      spacing: 10,
       children: [
         _buildIngredientItem('Mỳ Pasta', '500g', true),
-        const SizedBox(height: 10),
         _buildIngredientItem('Cà chua', '1 quả', true),
-        const SizedBox(height: 10),
         _buildIngredientItem('Tỏi', '1 củ', true),
       ],
     );
@@ -403,14 +398,12 @@ Widget _buildSingleTabBtn({
   Widget _buildInstructionsList() {
     // Đây là nội dung giả lập cho trang "Hướng dẫn"
     return Column(
+      spacing: 10,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildStepItem(1, "Luộc mỳ trong nước sôi khoảng 10 phút đến khi chín tới.", note: "Mẹo: Thêm một chút muối vào nước luộc để mỳ thêm đậm đà."),
-        const SizedBox(height: 16),
         _buildStepItem(2, "Thái nhỏ cà chua và tỏi. Phi thơm tỏi với dầu ô liu."),
-        const SizedBox(height: 16),
         _buildStepItem(3, "Cho cà chua vào xào chín mềm, nêm gia vị vừa ăn."),
-        const SizedBox(height: 16),
         _buildStepItem(4, "Trộn mỳ với sốt, thêm húng quế và thưởng thức."),
       ],
     );
@@ -533,9 +526,10 @@ Widget _buildSingleTabBtn({
 Widget _buildBottomBar() {
   // Sử dụng SafeArea để tránh bị tràn xuống thanh Home ảo của iPhone/Android
   return SafeArea(
-    top: false, // Không cần safe area ở trên
+    // top: false, // Không cần safe area ở trên
     child: Container(
-      width: double.infinity,
+      height: 70,
+      // width: double.infinity,
       padding: const EdgeInsets.fromLTRB(10, 10, 10, 10), // Giảm padding bottom vì SafeArea đã lo rồi
       decoration: ShapeDecoration(
         color: Colors.white,
