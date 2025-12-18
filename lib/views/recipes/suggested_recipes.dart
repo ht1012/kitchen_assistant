@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'recip-card.dart';
+import 'recipe-card.dart';
 class Recipes extends StatelessWidget {
   const Recipes({super.key});
 
@@ -13,12 +13,21 @@ class Recipes extends StatelessWidget {
             //body cuộn
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(vertical: 10),
+                padding: const EdgeInsets.only(bottom: 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildHeader(),
                     // Bộ lọc (Filter)
+                    const SizedBox(
+                            height: 5,
+                            width: double.infinity,
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                color: Color.fromARGB(255, 240, 253, 244),
+                              ),
+                            ),
+                            ),
                     Container(
                       color: Colors.white,
                       padding: const EdgeInsets.all(15),
@@ -27,7 +36,7 @@ class Recipes extends StatelessWidget {
                         children: [
                           _buildFilterSection('Thời gian nấu ăn', ['Tất cả', 'Nhanh (≤20’)', 'Trung bình', 'Dài (>35’)']),
                           const SizedBox(height: 15),
-                          _buildFilterSection('Loại ẩm thực', ['Tất cả', 'Italian', 'American', 'Asian']),
+                          _buildFilterSection('Loại ẩm thực', ['Tất cả', 'Italian', 'American', 'Asian', 'Mexican', 'Vietnamese']),
                           const SizedBox(height: 15),
                           _buildFilterSection('Thời điểm', ['Tất cả', 'Sáng', 'Trưa', 'Tối']),
                           const SizedBox(height: 15),
@@ -36,6 +45,13 @@ class Recipes extends StatelessWidget {
                       ),
                     ),
                     // Thông báo tìm thấy
+                    const SizedBox(
+                      height: 1,
+                      child: Divider(
+                        color: Color(0xFFF2F4F6),
+                        thickness: 1,
+                      ),
+                    ),
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: 15),
                       child: Center(
@@ -64,7 +80,7 @@ class Recipes extends StatelessWidget {
                       image: "assets/images/recipes/recipe1.png",
                       time: '30 phút',
                       steps: '7/7',
-                      tags: ['American', 'Dễ'],
+                      tags: ['American', 'Cao'],
                       matchPercent: 100,
                     ),
                     const SizedBox(height: 15),
