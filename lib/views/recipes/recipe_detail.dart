@@ -46,22 +46,22 @@ class _RecipeDetailState extends State<RecipeDetail> {
                 spacing: 10,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  
                   _buildDescribe(),
                   // Các phần khác như nguyên liệu, hướng dẫn, v.v.
                   _buildTimeInfoRow(),
                   
                   _buildTabButtons(),
                   
-                  
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Column(
+                      spacing: 10,
                       children: [
                           _selectedTab == 0 
                             ? _buildIngredientsList() 
                             : _buildInstructionsList(),
-                        const SizedBox(height: 20),
-                        if (_selectedTab == 0) _buildTipBox(), // Chỉ hiện Tip ở tab nguyên liệu
+                          if (_selectedTab == 0) _buildTipBox(), // Chỉ hiện Tip ở tab nguyên liệu
                       ],
                     ),
                   ),// Hiển thị nội dung dựa trên Tab đang chọn
@@ -183,7 +183,6 @@ class _RecipeDetailState extends State<RecipeDetail> {
         Padding(
           padding: const EdgeInsets.all(10),
         ),
-        const SizedBox(width: 10),
         const Expanded(
           child: Text(
             'Một món mì ống béo ngậy và thơm ngon với cà chua tươi và '
