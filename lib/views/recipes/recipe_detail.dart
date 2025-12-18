@@ -51,17 +51,28 @@ class _RecipeDetailState extends State<RecipeDetail> {
                   // Các phần khác như nguyên liệu, hướng dẫn, v.v.
                   _buildTimeInfoRow(),
                   
-                  _buildTabButtons(),
-                  
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.lightGreen[50]
+                    ),
+                    
                     child: Column(
                       spacing: 10,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                          _selectedTab == 0 
-                            ? _buildIngredientsList() 
-                            : _buildInstructionsList(),
-                          if (_selectedTab == 0) _buildTipBox(), // Chỉ hiện Tip ở tab nguyên liệu
+                        _buildTabButtons(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Column(
+                            spacing: 10,
+                            children: [
+                              _selectedTab == 0 
+                                ? _buildIngredientsList() 
+                                : _buildInstructionsList(),
+                              if (_selectedTab == 0) _buildTipBox(), // Chỉ hiện Tip ở tab nguyên liệu
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                   ),// Hiển thị nội dung dựa trên Tab đang chọn
@@ -202,7 +213,7 @@ class _RecipeDetailState extends State<RecipeDetail> {
       decoration: 
         BoxDecoration(
           color: Colors.lightGreen[50],
-          border: Border.all(color: const Color(0xFFB8F7CF)),        ),
+        ),
       child: Row(
         children: [
         Expanded(child: _buildInfoCard('Thời gian chuẩn bị', '15 phút')),
@@ -380,6 +391,7 @@ Widget _buildSingleTabBtn({
 
   Widget _buildTipBox() {
     return Container(
+      margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: const Color(0xFFFFF7EC),
