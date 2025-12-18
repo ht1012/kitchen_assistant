@@ -32,6 +32,7 @@ class _AddIngredientPageState extends State<AddIngredientPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -43,7 +44,6 @@ class _AddIngredientPageState extends State<AddIngredientPage> {
         child: SafeArea(
           child: Column(
             children: [
-              // ===== Header =====
               Padding(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -223,7 +223,7 @@ class _AddIngredientPageState extends State<AddIngredientPage> {
             borderRadius: BorderRadius.circular(16),
           ),
           child: TextField(
-            controller: controller, // ⭐ GẮN CONTROLLER
+            controller: controller,
             decoration: InputDecoration(
               border: InputBorder.none,
               suffixIcon: suffix,
