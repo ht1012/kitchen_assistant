@@ -52,14 +52,26 @@ class _RecipeDetailState extends State<RecipeDetail> {
                   const SizedBox(height: 20),
                   
                   _buildTabButtons(),
-                  const SizedBox(height: 20),
+                  const SizedBox(
+                    height: 20,
+                    child: Divider(
+                      color: Color(0xFFF2F4F6),
+                      thickness: 1,
+                    ),
+                  ),
                   
-                  // Hiển thị nội dung dựa trên Tab đang chọn
-                  _selectedTab == 0 
-                      ? _buildIngredientsList() 
-                      : _buildInstructionsList(),
-                  const SizedBox(height: 20),
-                  if (_selectedTab == 0) _buildTipBox(), // Chỉ hiện Tip ở tab nguyên liệu
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Column(
+                      children: [
+                          _selectedTab == 0 
+                            ? _buildIngredientsList() 
+                            : _buildInstructionsList(),
+                        const SizedBox(height: 20),
+                        if (_selectedTab == 0) _buildTipBox(), // Chỉ hiện Tip ở tab nguyên liệu
+                      ],
+                    ),
+                  ),// Hiển thị nội dung dựa trên Tab đang chọn
                   const SizedBox(height: 30),
                   _buildBottomBar(),
                 ],
