@@ -92,12 +92,14 @@ class RecipeCard extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 5),
-                LinearProgressIndicator(
-                  value: matchPercent / 100,
-                  backgroundColor: const Color(0xFFF2F4F6),
-                  color: matchPercent == 100 ? const Color(0xFF00C850) : Colors.orange,
-                  minHeight: 6,
+                ClipRRect(
                   borderRadius: BorderRadius.circular(3),
+                  child: LinearProgressIndicator(
+                    value: matchPercent / 100,
+                    backgroundColor: const Color(0xFFF2F4F6),
+                    color: matchPercent == 100 ? const Color(0xFF00C850) : Colors.orange,
+                    minHeight: 6,
+                  ),
                 ),
                 const SizedBox(height: 15),
                 // Nút bấm
