@@ -97,8 +97,13 @@ class PantryPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       floatingActionButton: FloatingActionButton(
-        backgroundColor: const Color(0xFF00C850),
-        child: const Icon(Icons.add, color: Colors.white),
+        backgroundColor: const Color(0xFF7BF1A8),
+        shape: const CircleBorder(), 
+          child: const Icon(
+            Icons.add,
+            color: Colors.white, 
+            size: 28,
+        ),
         onPressed: () {
           Navigator.push(
             context,

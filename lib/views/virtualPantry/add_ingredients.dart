@@ -43,31 +43,37 @@ class _AddIngredientPageState extends State<AddIngredientPage> {
         child: SafeArea(
           child: Column(
             children: [
-              // ===== Header =====
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween, // Để các icon đẩy ra 2 mép
                   children: [
+                    // Nút quay lại
                     IconButton(
-                      icon: const Icon(Icons.arrow_back),
+                      icon: const Icon(Icons.arrow_back, color: Colors.black),
                       onPressed: () => Navigator.pop(context),
                     ),
+                    
+                    // Tiêu đề căn giữa
                     Text(
-                      isEditMode ? 'Sửa nguyên liệu' : 'Thêm nguyên liệu',
-                      style: TextStyle(
+                      isEditMode ? 'Cập nhật hạn sử dụng' : 'Thêm nguyên liệu',
+                      style: const TextStyle(
                         fontSize: 24,
-                        color: Color(0xFF075B33),
-                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF386641), // Màu xanh đậm giống ảnh
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
-                    const SizedBox(width: 48),
+
+                    // Nút QR Code (Đây là phần bạn đang thiếu)
+                    IconButton(
+                      icon: const Icon(Icons.qr_code_scanner, color: Color(0xFF386641)),
+                      onPressed: () {
+                        // Thêm logic quét mã tại đây
+                      },
+                    ),
                   ],
                 ),
               ),
-
-              // ===== Body =====
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
