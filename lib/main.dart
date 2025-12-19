@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'views/main/home_screen.dart';
+import 'package:kitchen_assistant/views/login/login-and-intro.dart';
 void main() {
   runApp(const MyApp());
 }
@@ -19,7 +19,7 @@ class MyApp extends StatelessWidget {
           theme: ThemeData(
             primarySwatch: Colors.blue,
           ),
-          home: const Dashboard(),
+          home: const FirstScreen(),
         );
       },
     );
