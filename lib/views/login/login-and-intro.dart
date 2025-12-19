@@ -93,9 +93,9 @@ class IntroApp extends StatelessWidget {
               children: const [
                 _AppIcon(),
                 SizedBox(height: 16),
-                _Title(),
+                _Title(text: 'Bếp Trợ Lý'),
                 SizedBox(height: 8),
-                _Subtitle(),
+                _Subtitle(text: 'Quản lý tủ lạnh – Gợi ý món ăn thông minh'),
               ],
             ),
           ),
@@ -125,12 +125,14 @@ class _AppIcon extends StatelessWidget {
 }
 
 class _Title extends StatelessWidget {
-  const _Title();
+  const _Title({super.key, required this.text});
+
+  final String text;
 
   @override
   Widget build(BuildContext context) {
-    return const Text(
-      'Bếp Trợ Lý',
+    return Text(
+      text,
       textAlign: TextAlign.center,
       style: TextStyle(
         color: Color(0xFF008235),
@@ -142,14 +144,16 @@ class _Title extends StatelessWidget {
 }
 
 class _Subtitle extends StatelessWidget {
-  const _Subtitle();
+  final String text;
+
+  const _Subtitle({super.key, required this.text});
 
   @override
   Widget build(BuildContext context) {
-    return const Text(
-      'Quản lý tủ lạnh – Gợi ý món ăn thông minh',
+    return Text(
+      text,
       textAlign: TextAlign.center,
-      style: TextStyle(
+      style: const TextStyle(
         color: Color(0xFF495565),
         fontSize: 15,
         height: 1.4,
@@ -187,9 +191,9 @@ class Login extends StatelessWidget {
                 children: [
                   const _AppIcon(), // Tái sử dụng Icon cho gọn
                   const SizedBox(height: 16),
-                  const _Title(),
+                  const _Title(text: "Tham gia Hộ Gia Đình"),
                   const SizedBox(height: 8),
-                  const _Subtitle(),
+                  const _Subtitle(text: "Tham gia hộ gia đình hiện có hoặc tạo rmới để bắt đầu"),
                   const SizedBox(height: 32),
                   _buildJoinFamily(),
                   const SizedBox(height: 24),
