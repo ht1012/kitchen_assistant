@@ -52,9 +52,6 @@ class _FirstScreenState extends State<FirstScreen> {
   }
 }
 
-// ==========================================
-// CÁC WIDGET GIAO DIỆN (GIỮ NGUYÊN NHƯ CŨ)
-// ==========================================
 
 class IntroApp extends StatelessWidget {
   const IntroApp({super.key});

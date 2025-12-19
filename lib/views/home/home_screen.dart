@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:kitchen_assistant/views/recipes/suggested_recipes.dart';
 import '../widgets/bottom_nav.dart';
+import '../notification/notification.dart';
+import '../shoppingList/shopping_list.dart';
+import '../mealPlanner/meal_planner.dart';
 
+import '../virtualPantry/pantry_screen.dart';
 class Dashboard extends StatefulWidget {
   const Dashboard({super.key});
 
   @override
   State<Dashboard> createState() => _DashboardState();
 }
-
+  
 class _DashboardState extends State<Dashboard> {
   int _currentIndex = 0;
 
@@ -17,12 +21,12 @@ class _DashboardState extends State<Dashboard> {
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,
-        children: const [
+        children:  [
           _HomePage(),        // Trang chủ
-          _PantryPage(),      // Kho
-          _ShoppingPage(),    // Mua sắm
-          _PlanPage(),        // Kế hoạch
-          _NotificationPage() // Thông báo
+          PantryPage(),      // Kho
+          ShoppingPage(),    // Mua sắm
+          PlanPage(),        // Kế hoạch
+          NotificationPage() // Thông báo
         ],
       ),
       bottomNavigationBar: BottomNav(
@@ -42,17 +46,21 @@ class _HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFFF0FDF4), Colors.white],
-          ),
+    // Lấy chiều cao của phần tai thỏ (top padding)
+    final double topPadding = MediaQuery.of(context).padding.top;
+
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFFF0FDF4), Colors.white], // Màu nền đồng nhất
         ),
+      ),
+      child: ScrollConfiguration(
+        behavior: const ScrollBehavior().copyWith(overscroll: false),
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.fromLTRB(16, topPadding + 8, 16, 16),
           children: const [
             _Header(),
             SizedBox(height: 16),
@@ -61,52 +69,7 @@ class _HomePage extends StatelessWidget {
             _SuggestSection(),
           ],
         ),
-      ),
-    );
-  }
-}
-
-
-class _PantryPage extends StatelessWidget {
-  const _PantryPage();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Màn hình Kho', style: TextStyle(fontSize: 22)),
-    );
-  }
-}
-
-class _ShoppingPage extends StatelessWidget {
-  const _ShoppingPage();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Mua sắm', style: TextStyle(fontSize: 22)),
-    );
-  }
-}
-
-class _PlanPage extends StatelessWidget {
-  const _PlanPage();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Kế hoạch', style: TextStyle(fontSize: 22)),
-    );
-  }
-}
-
-class _NotificationPage extends StatelessWidget {
-  const _NotificationPage();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Thông báo', style: TextStyle(fontSize: 22)),
+      )
     );
   }
 }
@@ -116,25 +79,64 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Image.asset(
-          'assets/images/img_cook.png',
-          width: 77,
-          height: 73,
-        ),
-        const SizedBox(width: 12),
-        const Text(
-          'Chào buổi sáng',
-          style: TextStyle(
-            fontSize: 28,
-            color: Color(0xFF075B33),
+    return Container(
+      color: Colors.transparent, // quan trọng
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Image.asset(
+            'assets/images/img_cook.png',
+            width: 65,
+            height: 65,
           ),
-        ),
-      ],
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Bếp Nhà Trang',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF075B33),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: const [
+                    Text(
+                      'Mã: 24356182',
+                      style: TextStyle(
+                        color: Color(0xFF6A7282),
+                        fontSize: 12,
+                      ),
+                    ),
+                    SizedBox(width: 4),
+                    Icon(Icons.copy, size: 14, color: Colors.grey),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          Column(
+            children: const [
+              Icon(Icons.logout, size: 20, color: Color(0xFF075B33)),
+              Text(
+                'Đăng xuất',
+                style: TextStyle(
+                  color: Color(0xFF075B33),
+                  fontSize: 10,
+                ),
+              ),
+            ],
+          )
+        ],
+      ),
     );
   }
 }
+
 
 class _IngredientStatus extends StatelessWidget {
   const _IngredientStatus();
@@ -292,13 +294,6 @@ class _RecipeCard extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: const Color(0xFFF2F4F6)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x19000000),
-            blurRadius: 3,
-            offset: Offset(0, 1),
-          ),
-        ],
       ),
       child: Row(
         children: [
