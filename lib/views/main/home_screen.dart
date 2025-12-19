@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kitchen_assistant/views/recipes/suggested_recipes.dart';
 import '../widgets/bottom_nav.dart';
 
 class Dashboard extends StatefulWidget {
@@ -238,7 +239,7 @@ class _SuggestHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: const [
+      children: [
         Text(
           'Bạn muốn nấu gì hôm nay?',
           style: TextStyle(
@@ -246,11 +247,27 @@ class _SuggestHeader extends StatelessWidget {
             fontWeight: FontWeight.w600,
           ),
         ),
-        Text(
-          'Các gợi ý khác',
-          style: TextStyle(
-            color: Color(0xFF00C850),
-            fontWeight: FontWeight.w700,
+        // TextButton(
+        //   child: Text('Các gợi ý khác'),
+        //   // 'Các gợi ý khác',
+        //   // style: TextStyle(
+        //   //   color: Color(0xFF00C850),
+        //   //   fontWeight: FontWeight.w700,
+        // ),
+        GestureDetector(
+          onTap: (){
+            Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => Recipes()),
+            );
+          },
+          child: Text(
+            'Các gợi ý khác',
+              style: TextStyle(
+              color: Color(0xFF00C850),
+              fontWeight: FontWeight.w700,
+              decoration: TextDecoration.underline,
+          ),
           ),
         ),
       ],
