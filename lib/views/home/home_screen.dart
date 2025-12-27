@@ -245,30 +245,25 @@ class _SuggestHeader extends StatelessWidget {
         Text(
           'Bạn muốn nấu gì hôm nay?',
           style: TextStyle(
-            fontStyle: FontStyle.italic,
-            fontWeight: FontWeight.w600,
+        fontStyle: FontStyle.italic,
+        fontWeight: FontWeight.w600,
           ),
         ),
-        // TextButton(
-        //   child: Text('Các gợi ý khác'),
-        //   // 'Các gợi ý khác',
-        //   // style: TextStyle(
-        //   //   color: Color(0xFF00C850),
-        //   //   fontWeight: FontWeight.w700,
-        // ),
         GestureDetector(
           onTap: (){
-            Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => Recipes()),
-            );
+        Navigator.push(
+            context,
+            MaterialPageRoute(
+          builder: (context) => Recipes(),
+          fullscreenDialog: false,
+            ),
+        );
           },
           child: Text(
-            'Các gợi ý khác',
-              style: TextStyle(
-              color: Color(0xFF00C850),
-              fontWeight: FontWeight.w700,
-              decoration: TextDecoration.underline,
+        'Các gợi ý khác',
+          style: TextStyle(
+          color: Color(0xFF00C850),
+          fontWeight: FontWeight.w700,
           ),
           ),
         ),
