@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/virtualPantry/ingredient_model.dart';
 import '../../viewmodels/virtualPantry/pantry_viewmodel.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
+
 
 class AddIngredientPage extends StatefulWidget {
   final Ingredient? ingredient;
@@ -16,6 +19,9 @@ class _AddIngredientPageState extends State<AddIngredientPage> {
   late TextEditingController nameController;
   late TextEditingController quantityController;
   late TextEditingController dateController;
+
+  File? _image;
+  final ImagePicker _picker = ImagePicker();
 
   DateTime? selectedDate;
   String? selectedCategoryId;
@@ -55,7 +61,7 @@ class _AddIngredientPageState extends State<AddIngredientPage> {
 
     selectedCategoryId =
         isEditMode ? widget.ingredient!.categoryId : null;
-
+    
     selectedUnit =
         isEditMode ? widget.ingredient!.unit : null;
 
@@ -92,6 +98,20 @@ class _AddIngredientPageState extends State<AddIngredientPage> {
       });
     }
   }
+
+  Future<void> _takePhoto() async {
+    final XFile? photo = await _picker.pickImage(
+      source: ImageSource.camera,
+      imageQuality: 80,
+    );
+
+    if (photo != null) {
+      setState(() {
+        _image = File(photo.path);
+      });
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -144,17 +164,24 @@ class _AddIngredientPageState extends State<AddIngredientPage> {
                         children: [
                           ClipRRect(
                             borderRadius: BorderRadius.circular(16),
-                            child: Image.asset(
-                              'assets/images/ingre.png',
+                            child: Image(
+                              image: _image != null
+                                  ? FileImage(_image!)
+                                  : const AssetImage('assets/images/ingre.png')
+                                      as ImageProvider,
                               width: 132,
                               height: 130,
                               fit: BoxFit.cover,
                             ),
                           ),
-                          const CircleAvatar(
-                            radius: 20,
-                            backgroundColor: Color(0xFF00C850),
-                            child: Icon(Icons.add, color: Colors.white),
+
+                          GestureDetector(
+                            onTap: _takePhoto, // 👈 BẤM LÀ MỞ CAMERA
+                            child: const CircleAvatar(
+                              radius: 20,
+                              backgroundColor: Color(0xFF00C850),
+                              child: Icon(Icons.add, color: Colors.white),
+                            ),
                           ),
                         ],
                       ),
@@ -292,7 +319,7 @@ class _AddIngredientPageState extends State<AddIngredientPage> {
       quantity: double.parse(quantityController.text),
       unit: selectedUnit!,
       expirationDate: selectedDate!,
-      imageUrl: 'assets/images/ingre.png',
+      imageUrl: _image?.path ?? 'assets/images/ingre.png',
     );
 
     final viewModel =
