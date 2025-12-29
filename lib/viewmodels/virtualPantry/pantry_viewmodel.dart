@@ -18,7 +18,21 @@ class PantryViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // tính trạng thái
+  Future<void> addIngredient(Ingredient ingredient) async {
+    await _service.addIngredient(ingredient);
+    await loadIngredients();
+  }
+
+  Future<void> updateIngredient(String id, Ingredient ingredient) async {
+    await _service.updateIngredient(id, ingredient);
+    await loadIngredients();
+  }
+
+  Future<void> deleteIngredient(String id) async {
+    await _service.deleteIngredient(id);
+    await loadIngredients();
+  }
+
   String getStatus(Ingredient i) {
     final days = i.expirationDate.difference(DateTime.now()).inDays;
     if (days < 0) return 'Hết hạn';

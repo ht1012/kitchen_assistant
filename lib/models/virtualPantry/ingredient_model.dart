@@ -7,6 +7,8 @@ class Ingredient {
   final String unit;
   final DateTime expirationDate;
   final String imageUrl;
+  final String categoryId;
+  final String categoryName;
 
   Ingredient({
     required this.id,
@@ -15,6 +17,8 @@ class Ingredient {
     required this.unit,
     required this.expirationDate,
     required this.imageUrl,
+    required this.categoryId,
+    required this.categoryName,
   });
 
   factory Ingredient.fromFirestore(DocumentSnapshot doc) {
@@ -25,9 +29,10 @@ class Ingredient {
       name: data['ingredient_name'],
       quantity: (data['quantity'] as num).toDouble(),
       unit: data['unit'],
-      expirationDate:
-          (data['expiration_date'] as Timestamp).toDate(),
+      expirationDate: (data['expiration_date'] as Timestamp).toDate(),
       imageUrl: data['ingredient_image'] ?? '',
+      categoryId: data['category_id'],
+      categoryName: data['category_name'],
     );
   }
 }
