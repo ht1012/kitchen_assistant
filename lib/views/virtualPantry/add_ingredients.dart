@@ -4,6 +4,7 @@ import '../../models/virtualPantry/ingredient_model.dart';
 import '../../viewmodels/virtualPantry/pantry_viewmodel.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 
 
 class AddIngredientPage extends StatefulWidget {
@@ -310,6 +311,32 @@ class _AddIngredientPageState extends State<AddIngredientPage> {
       return;
     }
 
+    // Show loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    String imageUrl = 'assets/images/ingre.png'; // Default image
+
+    // Upload image if selected
+    if (_image != null) {
+      try {
+        final storageRef = FirebaseStorage.instance
+            .ref()
+            .child('ingredients/${DateTime.now().millisecondsSinceEpoch}.jpg');
+        await storageRef.putFile(_image!);
+        imageUrl = await storageRef.getDownloadURL();
+      } catch (e) {
+        Navigator.pop(context); // Close loading
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi upload ảnh: $e')),
+        );
+        return;
+      }
+    }
+
     final ingredient = Ingredient(
       id: isEditMode ? widget.ingredient!.id : '',
       name: nameController.text,
@@ -319,19 +346,26 @@ class _AddIngredientPageState extends State<AddIngredientPage> {
       quantity: double.parse(quantityController.text),
       unit: selectedUnit!,
       expirationDate: selectedDate!,
-      imageUrl: _image?.path ?? 'assets/images/ingre.png',
+      imageUrl: imageUrl,
     );
 
     final viewModel =
         Provider.of<PantryViewModel>(context, listen: false);
 
-    if (isEditMode) {
-      await viewModel.updateIngredient(widget.ingredient!.id, ingredient);
-    } else {
-      await viewModel.addIngredient(ingredient);
+    try {
+      if (isEditMode) {
+        await viewModel.updateIngredient(widget.ingredient!.id, ingredient);
+      } else {
+        await viewModel.addIngredient(ingredient);
+      }
+      Navigator.pop(context); // Close loading
+      Navigator.pop(context); // Close add page
+    } catch (e) {
+      Navigator.pop(context); // Close loading
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Lỗi: $e')),
+      );
     }
-
-    Navigator.pop(context);
   }
 
   // ===== Input Field =====
