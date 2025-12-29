@@ -70,7 +70,8 @@ void _showDishSelectionForm(BuildContext context) {
   Widget _buildHeader() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      // padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.only(top: 40, left: 24, right: 24, bottom: 16),
       decoration: const BoxDecoration(
         color: Colors.white,
         border: Border(bottom: BorderSide(color: Color(0xFFF2F4F6))),

@@ -51,7 +51,7 @@ class ShoppingPage extends StatelessWidget {
               const Text(
                 'Danh sách mua sắm',
                 style: TextStyle(
-                  fontSize: 28,
+                  fontSize: 24,
                   fontWeight: FontWeight.w600,
                   color: Color(0xFF101727),
                 ),
@@ -375,21 +375,32 @@ class ShoppingPage extends StatelessWidget {
 
         
           Row(
-            children: [
-              if (hasEdit) const Text('✏️', style: TextStyle(fontSize: 16)),
-              const SizedBox(width: 8),
+          children: [
+            if (hasEdit)
               ColorFiltered(
                 colorFilter: const ColorFilter.mode(
                   Color(0xFF99A1AF),
                   BlendMode.srcIn,
                 ),
                 child: Image.asset(
-                  'assets/images/icon_trash.png',
+                  'assets/images/icon_edit.png',
                   width: 16,
                   height: 16,
                 ),
               ),
-            ],
+            const SizedBox(width: 8),
+            ColorFiltered(
+              colorFilter: const ColorFilter.mode(
+                Color(0xFF99A1AF),
+                BlendMode.srcIn,
+              ),
+              child: Image.asset(
+                'assets/images/icon_trash.png',
+                width: 16,
+                height: 16,
+              ),
+            ),
+          ],
           ),
         ],
       ),
