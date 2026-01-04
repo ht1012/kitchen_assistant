@@ -2,12 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:kitchen_assistant/views/login/login-and-intro.dart';
+import 'firebase_options.dart';
+import 'package:firebase_core/firebase_core.dart';  
 import 'views/home/home_screen.dart';
-void main() {
+void main() async{
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
     statusBarIconBrightness: Brightness.dark,
   ));
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(const MyApp());
 }
 
@@ -25,7 +31,12 @@ class MyApp extends StatelessWidget {
           theme: ThemeData(
             primarySwatch: Colors.blue,
           ),
-          home: const Dashboard(),
+          home: const FirstScreen(),
+          routes: {
+            '/login': (context) => const FirstScreen(),
+            '/home': (context) => const Dashboard(),
+            
+          },
         );
       },
     );
