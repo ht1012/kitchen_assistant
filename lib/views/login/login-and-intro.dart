@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-
+import 'package:kitchen_assistant/services/login_service.dart';
+import 'dart:math';
 class FirstScreen extends StatefulWidget {
   const FirstScreen({super.key});
 
@@ -10,7 +11,12 @@ class FirstScreen extends StatefulWidget {
 class _FirstScreenState extends State<FirstScreen> {
   // 1. Tạo controller để điều khiển PageView
   final PageController _pageController = PageController();
+  final TextEditingController _joinCodeController = TextEditingController();
+  final TextEditingController _familyNameController = TextEditingController();
+  bool _isLoading = false;
 
+  // Khởi tạo Service
+  final LoginService _loginService = LoginService();
   @override
   void initState() {
     super.initState();
@@ -37,15 +43,90 @@ class _FirstScreenState extends State<FirstScreen> {
     super.dispose();
   }
 
+  
+  // --- LOGIC 1: THAM GIA (Sử dụng LoginService) ---
+  Future<void> _handleJoinFamily() async {
+    final code = _joinCodeController.text.trim(); // Giữ nguyên case theo DB của bạn
+    if (code.isEmpty) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      // 1. Gọi Service tìm nhà
+      final household = await _loginService.getHouseholdByCode(code);
+
+      if (household == null) {
+        throw 'Mã mời không tồn tại!';
+      }
+
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/home');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  // --- LOGIC 2: TẠO MỚI (Sử dụng LoginService) ---
+  Future<void> _handleCreateFamily() async {
+    final String name = _familyNameController.text.trim();
+    if (name.isEmpty) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      // 1. Tạo mã random
+      String inviteCode = _generateRandomCode(5);
+
+      // 2. Gọi Service tạo nhà mới
+      await _loginService.createHousehold(
+        name, 
+        inviteCode
+      );
+
+      if (name.length < 10){
+        throw 'Tên hộ gia đình phải có ít nhất 10 ký tự!';
+      }
+      if (name.contains(RegExp(r'[!@#<>?":_`~;[\]\\|=+)(*&^%0-9-]'))){
+        throw 'Tên hộ gia đình không được chứa ký tự đặc biệt hoặc số!';
+      }
+
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/home');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  String _generateRandomCode(int length) {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    Random rnd = Random();
+    return String.fromCharCodes(Iterable.generate(
+      length, (_) => chars.codeUnitAt(rnd.nextInt(chars.length)),
+    ));
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: PageView(
         controller: _pageController,
         // (Tùy chọn) physics: NeverScrollableScrollPhysics(), // Nếu muốn CHẶN người dùng tự vuốt
-        children: const [
+        children:[
           IntroApp(),
-          Login(),
+          Login(joinCodeController: _joinCodeController, familyNameController: _familyNameController, isLoading: _isLoading, handleJoinFamily: _handleJoinFamily, handleCreateFamily: _handleCreateFamily),
         ],
       ),
     );
@@ -88,7 +169,7 @@ class IntroApp extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: const [
-                _AppIcon(),
+                _AppIcon(icon: Icons.kitchen_sharp),
                 SizedBox(height: 16),
                 _Title(text: 'Bếp Trợ Lý'),
                 SizedBox(height: 8),
@@ -103,7 +184,8 @@ class IntroApp extends StatelessWidget {
 }
 
 class _AppIcon extends StatelessWidget {
-  const _AppIcon();
+  final IconData icon;
+  const _AppIcon({super.key, required this.icon});
 
   @override
   Widget build(BuildContext context) {
@@ -116,7 +198,7 @@ class _AppIcon extends StatelessWidget {
         ),
         borderRadius: BorderRadius.circular(16),
       ),
-      child: const Icon(Icons.flash_on, color: Colors.white, size: 32),
+      child: Icon(icon, color: Colors.white, size: 32),
     );
   }
 }
@@ -160,7 +242,12 @@ class _Subtitle extends StatelessWidget {
 }
 
 class Login extends StatelessWidget {
-  const Login({super.key});
+  final TextEditingController joinCodeController;
+  final TextEditingController familyNameController;
+  final bool isLoading;
+  final Future<void> Function() handleJoinFamily;
+  final Future<void> Function() handleCreateFamily;
+  const Login({super.key, required this.joinCodeController, required this.familyNameController, required this.isLoading, required this.handleJoinFamily, required this.handleCreateFamily});
 
   @override
   Widget build(BuildContext context) {
@@ -186,17 +273,17 @@ class Login extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const _AppIcon(), // Tái sử dụng Icon cho gọn
+                  const _AppIcon(icon: Icons.house_sharp), // Tái sử dụng Icon cho gọn
                   const SizedBox(height: 16),
                   const _Title(text: "Tham gia Hộ Gia Đình"),
                   const SizedBox(height: 8),
                   const _Subtitle(text: "Tham gia hộ gia đình hiện có hoặc tạo rmới để bắt đầu"),
                   const SizedBox(height: 32),
-                  _buildJoinFamily(),
+                  _buildJoinFamily(joinCodeController),
                   const SizedBox(height: 24),
                   _buildDivider(),
                   const SizedBox(height: 24),
-                  _buildCreateFamily(),
+                  _buildCreateFamily(familyNameController),
                 ],
               ),
             ),
@@ -207,14 +294,16 @@ class Login extends StatelessWidget {
   }
 
   // ===== Widgets Login logic =====
-  
-  Widget _buildJoinFamily() {
+
+  Widget _buildJoinFamily(TextEditingController joinCodeController) {
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text('Nhập mã mời', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF354152))),
         const SizedBox(height: 8),
-        const TextField(
+        TextField(
+          controller: joinCodeController,
           decoration: InputDecoration(
             hintText: 'VD: BEP123',
             border: OutlineInputBorder(),
@@ -231,7 +320,7 @@ class Login extends StatelessWidget {
               padding: const EdgeInsets.only(top: 12, bottom: 12),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
-            onPressed: () {},
+            onPressed: isLoading ? null : handleJoinFamily,
             child: const Text('Tham gia', style: TextStyle(fontSize: 24, fontFamily: "Inter",)),
           ),
         ),
@@ -255,13 +344,14 @@ class Login extends StatelessWidget {
     );
   }
 
-  Widget _buildCreateFamily() {
+  Widget _buildCreateFamily(TextEditingController familyNameController) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text('Tên hộ gia đình', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF354152))),
         const SizedBox(height: 8),
-        const TextField(
+        TextField(
+          controller: familyNameController,
           decoration: InputDecoration(
             hintText: 'VD: Gia đình Nguyễn',
             border: OutlineInputBorder(),
@@ -277,7 +367,7 @@ class Login extends StatelessWidget {
               side: const BorderSide(color: Color(0xFF00C850), width: 1.5),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
-            onPressed: () {},
+            onPressed: isLoading ? null : handleCreateFamily,
             child: const Text(
               'Tạo hộ gia đình',
               style: TextStyle(color: Color(0xFF00A63D), fontSize: 24),
