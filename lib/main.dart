@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:kitchen_assistant/views/login/login-and-intro.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -7,10 +6,12 @@ import 'firebase_options.dart';
 import 'package:provider/provider.dart';
 import 'viewmodels/virtualPantry/pantry_viewmodel.dart';
 import 'views/home/home_screen.dart';
-void main() async {
+import 'package:flutter/services.dart';
+
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Kiểm tra xem Firebase đã được khởi tạo chưa
+  // Khởi tạo Firebase an toàn (tránh lỗi duplicate-app)
   try {
     if (Firebase.apps.isEmpty) {
       await Firebase.initializeApp(
@@ -18,7 +19,6 @@ void main() async {
       );
     }
   } catch (e) {
-    // Nếu Firebase đã được khởi tạo, bỏ qua lỗi
     if (!e.toString().contains('duplicate-app')) {
       rethrow;
     }
@@ -41,7 +41,6 @@ class MyApp extends StatelessWidget {
       designSize: const Size(360, 690), // kích thước thiết kế chuẩn
       builder: (context, child) {
         return ChangeNotifierProvider(
-          key: const ValueKey('pantry_provider'),
           create: (_) => PantryViewModel(),
           child: MaterialApp(
             title: 'Bếp Trợ Lý',
