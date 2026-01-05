@@ -25,8 +25,11 @@ class _PlanPageState extends State<PlanPage> {
   }
 
   DateTime _getWeekStart(DateTime date) {
-    return DateTime(date.year, date.month, date.day)
-        .subtract(Duration(days: date.weekday - 1));
+    return DateTime(
+      date.year,
+      date.month,
+      date.day,
+    ).subtract(Duration(days: date.weekday - 1));
   }
 
   void _previousWeek() {
@@ -41,7 +44,14 @@ class _PlanPageState extends State<PlanPage> {
     });
   }
 
-  // Thêm món ăn trực tiếp vào Firestore
+  void _showSnackBar(String message, Color color) {
+    if (mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message), backgroundColor: color));
+    }
+  }
+
   Future<void> _addMealToFirestore({
     required DateTime date,
     required String mealTime,
@@ -49,7 +59,6 @@ class _PlanPageState extends State<PlanPage> {
     required String recipeName,
     required List<MealPlan> existingMealPlans,
   }) async {
-    // Kiểm tra xem món ăn đã tồn tại trong Firestore chưa
     final existingInFirestore = existingMealPlans.any(
       (meal) =>
           meal.date.year == date.year &&
@@ -60,14 +69,7 @@ class _PlanPageState extends State<PlanPage> {
     );
 
     if (existingInFirestore) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Món "$recipeName" đã có trong bữa này!'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-      }
+      _showSnackBar('Món "$recipeName" đã có trong bữa này!', Colors.orange);
       return;
     }
 
@@ -78,47 +80,21 @@ class _PlanPageState extends State<PlanPage> {
         recipeId: recipeId,
         householdId: _householdId,
       );
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Đã thêm "$recipeName" thành công!'),
-            backgroundColor: const Color(0xFF7BF1A8),
-          ),
-        );
-      }
+      _showSnackBar(
+        'Đã thêm "$recipeName" thành công!',
+        const Color(0xFF7BF1A8),
+      );
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Có lỗi khi lưu món ăn!'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      _showSnackBar('Có lỗi khi lưu món ăn!', Colors.red);
     }
   }
 
-  // Xóa món ăn khỏi Firestore
   Future<void> _deleteMealFromFirestore(String mealPlanId) async {
     try {
       await _viewModel.deleteMealPlan(mealPlanId);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Đã xóa món ăn!'),
-            backgroundColor: Colors.grey,
-          ),
-        );
-      }
+      _showSnackBar('Đã xóa món ăn!', Colors.grey);
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Có lỗi khi xóa món ăn!'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      _showSnackBar('Có lỗi khi xóa món ăn!', Colors.red);
     }
   }
 
@@ -126,65 +102,49 @@ class _PlanPageState extends State<PlanPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SingleChildScrollView(
-        child: Container(
-          width: double.infinity,
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Colors.white, Colors.white],
-            ),
-          ),
-          child: Column(
-            children: [
-              _buildHeader(),
-              StreamBuilder<List<MealPlan>>(
-                stream: _viewModel.getWeeklyPlans(
-                  _householdId,
-                  _currentWeekStart,
-                ),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Padding(
-                      padding: EdgeInsets.all(32.0),
-                      child: Center(child: CircularProgressIndicator()),
-                    );
-                  }
-
-                  if (snapshot.hasError) {
-                    return Padding(
-                      padding: const EdgeInsets.all(32.0),
-                      child: Center(
-                        child: Column(
-                          children: [
-                            const Icon(Icons.error, color: Colors.red, size: 48),
-                            const SizedBox(height: 16),
-                            Text('Lỗi: ${snapshot.error}'),
-                          ],
-                        ),
-                      ),
-                    );
-                  }
-
-                  final mealPlans = snapshot.data ?? [];
-                  return _buildWeeklyPlan(mealPlans);
-                },
+        child: Column(
+          children: [
+            _buildHeader(),
+            StreamBuilder<List<MealPlan>>(
+              stream: _viewModel.getWeeklyPlans(
+                _householdId,
+                _currentWeekStart,
               ),
-            ],
-          ),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Padding(
+                    padding: EdgeInsets.all(32.0),
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                }
+
+                if (snapshot.hasError) {
+                  return Padding(
+                    padding: const EdgeInsets.all(32.0),
+                    child: Column(
+                      children: [
+                        const Icon(Icons.error, color: Colors.red, size: 48),
+                        const SizedBox(height: 16),
+                        Text('Lỗi: ${snapshot.error}'),
+                      ],
+                    ),
+                  );
+                }
+
+                return _buildWeeklyPlan(snapshot.data ?? []);
+              },
+            ),
+          ],
         ),
       ),
       floatingActionButton: StreamBuilder<List<MealPlan>>(
         stream: _viewModel.getWeeklyPlans(_householdId, _currentWeekStart),
         builder: (context, snapshot) {
-          final mealPlans = snapshot.data ?? [];
           return FloatingActionButton(
-            onPressed: () {
-              _showDishSelectionForm(
-                context,
-                existingMealPlans: mealPlans,
-              );
-            },
+            onPressed: () => _showDishSelectionForm(
+              context,
+              existingMealPlans: snapshot.data ?? [],
+            ),
             backgroundColor: const Color(0xFF7BF1A8),
             shape: const CircleBorder(),
             child: const Icon(Icons.add, color: Colors.white, size: 28),
@@ -204,7 +164,6 @@ class _PlanPageState extends State<PlanPage> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      isDismissible: true,
       builder: (bottomSheetContext) => DraggableScrollableSheet(
         initialChildSize: 0.9,
         minChildSize: 0.5,
@@ -231,9 +190,7 @@ class _PlanPageState extends State<PlanPage> {
                 );
               }
             },
-            onDragStarted: () {
-              Navigator.pop(bottomSheetContext);
-            },
+            onDragStarted: () => Navigator.pop(bottomSheetContext),
             viewModel: _viewModel,
             householdId: _householdId,
             existingMealPlans: existingMealPlans,
@@ -264,9 +221,7 @@ class _PlanPageState extends State<PlanPage> {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF7BF1A8), Color(0xFF7BF1A8)],
-                  ),
+                  color: const Color(0xFF7BF1A8),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Padding(
@@ -293,13 +248,20 @@ class _PlanPageState extends State<PlanPage> {
           StreamBuilder<List<MealPlan>>(
             stream: _viewModel.getWeeklyPlans(_householdId, _currentWeekStart),
             builder: (context, snapshot) {
-              final mealCount = snapshot.data?.length ?? 0;
+              final mealPlans = snapshot.data ?? [];
+              final uniqueMeals = <String>{};
+              for (final meal in mealPlans) {
+                final key = '${meal.date.year}-${meal.date.month}-${meal.date.day}-${meal.mealTime}';
+                uniqueMeals.add(key);
+              }
+              final mealCount = uniqueMeals.length;
               return Text(
                 '$mealCount/21 bữa ăn đã lên kế hoạch cho tuần này',
                 style: const TextStyle(fontSize: 14, color: Color(0xFF495565)),
               );
             },
           ),
+
           const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -312,7 +274,6 @@ class _PlanPageState extends State<PlanPage> {
                 'assets/images/icon_mealPlane.png',
                 width: 20,
                 height: 20,
-                fit: BoxFit.contain,
                 color: const Color(0xFF7BF1A8),
                 colorBlendMode: BlendMode.srcIn,
               ),
@@ -336,34 +297,29 @@ class _PlanPageState extends State<PlanPage> {
   }
 
   Widget _buildWeeklyPlan(List<MealPlan> mealPlans) {
-    final List<Map<String, dynamic>> weekDays = List.generate(7, (index) {
-      final date = _currentWeekStart.add(Duration(days: index));
-      final weekdays = [
-        'Thứ 2',
-        'Thứ 3',
-        'Thứ 4',
-        'Thứ 5',
-        'Thứ 6',
-        'Thứ 7',
-        'Chủ nhật',
-      ];
-
-      return {
-        'day': weekdays[index],
-        'date': date.day.toString(),
-        'fullDate': date,
-      };
-    });
+    const weekdays = [
+      'Thứ 2',
+      'Thứ 3',
+      'Thứ 4',
+      'Thứ 5',
+      'Thứ 6',
+      'Thứ 7',
+      'Chủ nhật',
+    ];
 
     return Column(
-      children: weekDays
-          .map((dayInfo) => _buildDayCard(dayInfo, mealPlans))
-          .toList(),
+      children: List.generate(7, (index) {
+        final date = _currentWeekStart.add(Duration(days: index));
+        return _buildDayCard(weekdays[index], date, mealPlans);
+      }),
     );
   }
 
-  Widget _buildDayCard(Map<String, dynamic> dayInfo, List<MealPlan> mealPlans) {
-    final DateTime date = dayInfo['fullDate'];
+  Widget _buildDayCard(
+    String dayName,
+    DateTime date,
+    List<MealPlan> mealPlans,
+  ) {
     final dayMeals = mealPlans
         .where(
           (meal) =>
@@ -381,7 +337,7 @@ class _PlanPageState extends State<PlanPage> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -411,7 +367,7 @@ class _PlanPageState extends State<PlanPage> {
                   ),
                   child: Center(
                     child: Text(
-                      dayInfo['date'],
+                      '${date.day}',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
@@ -421,7 +377,7 @@ class _PlanPageState extends State<PlanPage> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  dayInfo['day'],
+                  dayName,
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
@@ -430,7 +386,14 @@ class _PlanPageState extends State<PlanPage> {
               ],
             ),
           ),
-          _buildMealSection('☀️', 'Sáng', date, dayMeals, 'breakfast', mealPlans),
+          _buildMealSection(
+            '☀️',
+            'Sáng',
+            date,
+            dayMeals,
+            'breakfast',
+            mealPlans,
+          ),
           _buildMealSection('🌤', 'Trưa', date, dayMeals, 'lunch', mealPlans),
           _buildMealSection('🌙', 'Tối', date, dayMeals, 'dinner', mealPlans),
         ],
@@ -446,28 +409,22 @@ class _PlanPageState extends State<PlanPage> {
     String mealTimeKey,
     List<MealPlan> allMealPlans,
   ) {
-    final mealPlansForTime =
-        dayMeals.where((meal) => meal.mealTime == mealTimeKey).toList();
+    final mealPlansForTime = dayMeals
+        .where((meal) => meal.mealTime == mealTimeKey)
+        .toList();
 
     return DragTarget<Map<String, String>>(
       onWillAcceptWithDetails: (details) {
-        final data = details.data;
-        final recipeId = data['recipeId']!;
-
-        // Kiểm tra xem món ăn đã tồn tại trong Firestore chưa
-        final existsInFirestore = mealPlansForTime.any(
-          (meal) => meal.recipeId == recipeId,
+        return !mealPlansForTime.any(
+          (meal) => meal.recipeId == details.data['recipeId'],
         );
-
-        return !existsInFirestore;
       },
       onAcceptWithDetails: (details) {
-        final data = details.data;
         _addMealToFirestore(
           date: date,
           mealTime: mealTimeKey,
-          recipeId: data['recipeId']!,
-          recipeName: data['recipeName']!,
+          recipeId: details.data['recipeId']!,
+          recipeName: details.data['recipeName']!,
           existingMealPlans: allMealPlans,
         );
       },
@@ -481,11 +438,11 @@ class _PlanPageState extends State<PlanPage> {
                   border: Border.all(color: const Color(0xFF7BF1A8), width: 2),
                 )
               : rejectedData.isNotEmpty
-                  ? BoxDecoration(
-                      color: Colors.red.withOpacity(0.1),
-                      border: Border.all(color: Colors.red, width: 2),
-                    )
-                  : null,
+              ? BoxDecoration(
+                  color: Colors.red.withValues(alpha: 0.1),
+                  border: Border.all(color: Colors.red, width: 2),
+                )
+              : null,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -507,9 +464,14 @@ class _PlanPageState extends State<PlanPage> {
                 ...mealPlansForTime.map(
                   (meal) => _buildMealItem(meal.recipeId, meal.id),
                 ),
-                _buildAddMealButton(date, mealTimeKey, allMealPlans),
+                _buildMealButton(date, mealTimeKey, allMealPlans, 'Thêm món'),
               ] else
-                _buildEmptyMealSlot(date, mealTimeKey, allMealPlans),
+                _buildMealButton(
+                  date,
+                  mealTimeKey,
+                  allMealPlans,
+                  'Chưa có món',
+                ),
             ],
           ),
         );
@@ -522,49 +484,12 @@ class _PlanPageState extends State<PlanPage> {
       future: _viewModel.getRecipeById(recipeId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Container(
-            width: double.infinity,
-            margin: const EdgeInsets.only(bottom: 8),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0x4CA7D4B9),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Row(
-              children: [
-                SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-                SizedBox(width: 8),
-                Text('Đang tải...'),
-              ],
-            ),
-          );
+          return _buildLoadingMealItem();
         }
 
         final recipe = snapshot.data;
         if (recipe == null) {
-          return Container(
-            width: double.infinity,
-            margin: const EdgeInsets.only(bottom: 8),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.red.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text('Không tìm thấy món ăn'),
-                GestureDetector(
-                  onTap: () => _deleteMealFromFirestore(mealPlanId),
-                  child: const Icon(Icons.close, size: 18, color: Colors.red),
-                ),
-              ],
-            ),
-          );
+          return _buildErrorMealItem(mealPlanId);
         }
 
         return FutureBuilder<int>(
@@ -638,46 +563,56 @@ class _PlanPageState extends State<PlanPage> {
     );
   }
 
-  Widget _buildAddMealButton(
-    DateTime date,
-    String mealTimeKey,
-    List<MealPlan> allMealPlans,
-  ) {
+  Widget _buildLoadingMealItem() {
     return Container(
       width: double.infinity,
-      height: 40,
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        border: Border.all(color: const Color(0xFFD0D5DB)),
+        color: const Color(0x4CA7D4B9),
         borderRadius: BorderRadius.circular(10),
       ),
-      child: TextButton(
-        onPressed: () {
-          _showDishSelectionForm(
-            context,
-            targetDate: date,
-            targetMealTime: mealTimeKey,
-            existingMealPlans: allMealPlans,
-          );
-        },
-        child: const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.add, size: 16, color: Color(0xFF99A1AE)),
-            SizedBox(width: 8),
-            Text(
-              'Thêm món',
-              style: TextStyle(color: Color(0xFF99A1AE), fontSize: 14),
-            ),
-          ],
-        ),
+      child: const Row(
+        children: [
+          SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+          SizedBox(width: 8),
+          Text('Đang tải...'),
+        ],
       ),
     );
   }
 
-  Widget _buildEmptyMealSlot(
+  Widget _buildErrorMealItem(String mealPlanId) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.red.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          const Text('Không tìm thấy món ăn'),
+          GestureDetector(
+            onTap: () => _deleteMealFromFirestore(mealPlanId),
+            child: const Icon(Icons.close, size: 18, color: Colors.red),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMealButton(
     DateTime date,
     String mealTimeKey,
     List<MealPlan> allMealPlans,
+    String text,
   ) {
     return Container(
       width: double.infinity,
@@ -687,17 +622,24 @@ class _PlanPageState extends State<PlanPage> {
         borderRadius: BorderRadius.circular(10),
       ),
       child: TextButton(
-        onPressed: () {
-          _showDishSelectionForm(
-            context,
-            targetDate: date,
-            targetMealTime: mealTimeKey,
-            existingMealPlans: allMealPlans,
-          );
-        },
-        child: const Text(
-          'Chưa có món',
-          style: TextStyle(color: Color(0xFF99A1AE), fontSize: 14),
+        onPressed: () => _showDishSelectionForm(
+          context,
+          targetDate: date,
+          targetMealTime: mealTimeKey,
+          existingMealPlans: allMealPlans,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (text == 'Thêm món') ...[
+              const Icon(Icons.add, size: 16, color: Color(0xFF99A1AE)),
+              const SizedBox(width: 8),
+            ],
+            Text(
+              text,
+              style: const TextStyle(color: Color(0xFF99A1AE), fontSize: 14),
+            ),
+          ],
         ),
       ),
     );
@@ -741,9 +683,8 @@ class _DishSelectionFormState extends State<DishSelectionForm> {
   }
 
   bool _isRecipeAlreadyAdded(String recipeId) {
-    if (widget.targetDate == null || widget.targetMealTime == null) {
+    if (widget.targetDate == null || widget.targetMealTime == null)
       return false;
-    }
 
     return widget.existingMealPlans.any(
       (meal) =>
@@ -755,11 +696,23 @@ class _DishSelectionFormState extends State<DishSelectionForm> {
     );
   }
 
+  String _getMealTimeText(String? mealTime) {
+    switch (mealTime) {
+      case 'breakfast':
+        return 'Sáng';
+      case 'lunch':
+        return 'Trưa';
+      case 'dinner':
+        return 'Tối';
+      default:
+        return '';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Handle bar
         Container(
           width: 40,
           height: 4,
@@ -772,195 +725,26 @@ class _DishSelectionFormState extends State<DishSelectionForm> {
         Expanded(
           child: SingleChildScrollView(
             controller: widget.scrollController,
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Chọn món ăn',
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF101727),
-                            ),
-                          ),
-                          if (widget.targetDate != null &&
-                              widget.targetMealTime != null)
-                            Text(
-                              '${widget.targetMealTime == 'breakfast' ? 'Sáng' : widget.targetMealTime == 'lunch' ? 'Trưa' : 'Tối'} - ${widget.targetDate!.day}/${widget.targetDate!.month}',
-                              style: const TextStyle(
-                                fontSize: 14,
-                                color: Color(0xFF697282),
-                              ),
-                            ),
-                        ],
-                      ),
-                      IconButton(
-                        onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.close, size: 24),
-                      ),
-                    ],
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildFormHeader(),
+                const SizedBox(height: 16),
+                _buildSearchField(),
+                const SizedBox(height: 8),
+                Text(
+                  widget.targetDate != null
+                      ? 'Nhấn vào món ăn để thêm ngay'
+                      : 'Kéo thả món ăn vào lịch',
+                  style: const TextStyle(
+                    color: Color(0xFF697282),
+                    fontSize: 15,
                   ),
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF8FAFB),
-                      border: Border.all(color: const Color(0xFFE5E7EB)),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.search,
-                          color: Color(0xFF697282),
-                          size: 20,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: TextField(
-                            controller: _searchController,
-                            onChanged: (value) {
-                              setState(() {
-                                _searchText = value.toLowerCase();
-                              });
-                            },
-                            decoration: const InputDecoration(
-                              hintText: 'Tìm món ăn...',
-                              hintStyle: TextStyle(
-                                color: Color(0xFF697282),
-                                fontSize: 15,
-                              ),
-                              border: InputBorder.none,
-                              contentPadding: EdgeInsets.zero,
-                            ),
-                            style: const TextStyle(fontSize: 15),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    widget.targetDate != null
-                        ? 'Nhấn vào món ăn để thêm ngay'
-                        : 'Kéo thả món ăn vào lịch',
-                    style: const TextStyle(
-                      color: Color(0xFF697282),
-                      fontSize: 15,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  StreamBuilder<List<Recipe>>(
-                    stream: widget.viewModel.getRecipesByHousehold(
-                      widget.householdId,
-                    ),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(
-                          child: Padding(
-                            padding: EdgeInsets.all(32.0),
-                            child: CircularProgressIndicator(),
-                          ),
-                        );
-                      }
-
-                      if (snapshot.hasError) {
-                        return Center(
-                          child: Column(
-                            children: [
-                              const Icon(
-                                Icons.error,
-                                color: Colors.red,
-                                size: 48,
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'Lỗi: ${snapshot.error}',
-                                style: const TextStyle(color: Colors.red),
-                              ),
-                            ],
-                          ),
-                        );
-                      }
-
-                      final recipes = snapshot.data ?? [];
-
-                      if (recipes.isEmpty) {
-                        return const Center(
-                          child: Column(
-                            children: [
-                              Icon(
-                                Icons.restaurant,
-                                color: Colors.grey,
-                                size: 64,
-                              ),
-                              SizedBox(height: 16),
-                              Text(
-                                'Chưa có công thức nào',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w500,
-                                  color: Color(0xFF697282),
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }
-
-                      final filteredRecipes = recipes.where((recipe) {
-                        return _searchText.isEmpty ||
-                            recipe.recipeName.toLowerCase().contains(
-                                  _searchText,
-                                );
-                      }).toList();
-
-                      if (filteredRecipes.isEmpty) {
-                        return const Center(
-                          child: Padding(
-                            padding: EdgeInsets.all(32.0),
-                            child: Column(
-                              children: [
-                                Icon(
-                                  Icons.search_off,
-                                  color: Colors.grey,
-                                  size: 48,
-                                ),
-                                SizedBox(height: 16),
-                                Text(
-                                  'Không tìm thấy món ăn',
-                                  style: TextStyle(
-                                    color: Color(0xFF697282),
-                                    fontSize: 16,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      }
-
-                      return Column(
-                        children: filteredRecipes
-                            .map((recipe) => _buildDishItem(recipe))
-                            .toList(),
-                      );
-                    },
-                  ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 16),
+                _buildRecipeList(),
+              ],
             ),
           ),
         ),
@@ -968,152 +752,273 @@ class _DishSelectionFormState extends State<DishSelectionForm> {
     );
   }
 
+  Widget _buildFormHeader() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Chọn món ăn',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF101727),
+              ),
+            ),
+            if (widget.targetDate != null && widget.targetMealTime != null)
+              Text(
+                '${_getMealTimeText(widget.targetMealTime)} - ${widget.targetDate!.day}/${widget.targetDate!.month}',
+                style: const TextStyle(fontSize: 14, color: Color(0xFF697282)),
+              ),
+          ],
+        ),
+        IconButton(
+          onPressed: () => Navigator.pop(context),
+          icon: const Icon(Icons.close, size: 24),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSearchField() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFB),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.search, color: Color(0xFF697282), size: 20),
+          const SizedBox(width: 8),
+          Expanded(
+            child: TextField(
+              controller: _searchController,
+              onChanged: (value) =>
+                  setState(() => _searchText = value.toLowerCase()),
+              decoration: const InputDecoration(
+                hintText: 'Tìm món ăn...',
+                hintStyle: TextStyle(color: Color(0xFF697282), fontSize: 15),
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.zero,
+              ),
+              style: const TextStyle(fontSize: 15),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecipeList() {
+    return StreamBuilder<List<Recipe>>(
+      stream: widget.viewModel.getRecipesByHousehold(widget.householdId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(32.0),
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+
+        if (snapshot.hasError) {
+          return Center(
+            child: Column(
+              children: [
+                const Icon(Icons.error, color: Colors.red, size: 48),
+                const SizedBox(height: 16),
+                Text(
+                  'Lỗi: ${snapshot.error}',
+                  style: const TextStyle(color: Colors.red),
+                ),
+              ],
+            ),
+          );
+        }
+
+        final recipes = snapshot.data ?? [];
+        if (recipes.isEmpty) {
+          return const Center(
+            child: Column(
+              children: [
+                Icon(Icons.restaurant, color: Colors.grey, size: 64),
+                SizedBox(height: 16),
+                Text(
+                  'Chưa có công thức nào',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF697282),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        final filteredRecipes = recipes
+            .where(
+              (recipe) =>
+                  _searchText.isEmpty ||
+                  recipe.recipeName.toLowerCase().contains(_searchText),
+            )
+            .toList();
+
+        if (filteredRecipes.isEmpty) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(32.0),
+              child: Column(
+                children: [
+                  Icon(Icons.search_off, color: Colors.grey, size: 48),
+                  SizedBox(height: 16),
+                  Text(
+                    'Không tìm thấy món ăn',
+                    style: TextStyle(color: Color(0xFF697282), fontSize: 16),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        return Column(
+          children: filteredRecipes
+              .map((recipe) => _buildDishItem(recipe))
+              .toList(),
+        );
+      },
+    );
+  }
+
   Widget _buildDishItem(Recipe recipe) {
     final isAlreadyAdded = _isRecipeAlreadyAdded(recipe.id);
 
-    return FutureBuilder<bool>(
-      future: widget.viewModel.checkIngredientsAvailability(
+    return FutureBuilder<int>(
+      future: widget.viewModel.getMissingIngredientsCount(
         recipe.id,
         widget.householdId,
       ),
-      builder: (context, availabilitySnapshot) {
-        final hasEnoughIngredients = availabilitySnapshot.data ?? false;
+      builder: (context, missingSnapshot) {
+        final missingCount = missingSnapshot.data ?? 0;
+        final hasEnoughIngredients = missingCount == 0;
 
-        return FutureBuilder<int>(
-          future: widget.viewModel.getMissingIngredientsCount(
-            recipe.id,
-            widget.householdId,
-          ),
-          builder: (context, missingSnapshot) {
-            final missingCount = missingSnapshot.data ?? 0;
-
-          if (isAlreadyAdded) {
-            return Container(
-              width: double.infinity,
-              margin: const EdgeInsets.only(bottom: 12),
-              child: Opacity(
-                opacity: 0.6,
-                child: Stack(
-                  children: [
-                    _buildDishContainer(
-                      recipe,
-                      hasEnoughIngredients,
-                      missingCount,
-                    ),
-
-                    // Overlay phủ FULL item
-                    Positioned.fill(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.35),
-                          borderRadius: BorderRadius.circular(14), // giống item
-                        ),
-                        child: const Center(
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.check_circle, color: Colors.white, size: 22),
-                              SizedBox(width: 6),
-                              Text(
-                                'Đã thêm',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white,
-                                ),
+        if (isAlreadyAdded) {
+          return Container(
+            width: double.infinity,
+            margin: const EdgeInsets.only(bottom: 12),
+            child: Opacity(
+              opacity: 0.6,
+              child: Stack(
+                children: [
+                  _buildDishContainer(
+                    recipe,
+                    hasEnoughIngredients,
+                    missingCount,
+                  ),
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.35),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: const Center(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.check_circle,
+                              color: Colors.white,
+                              size: 22,
+                            ),
+                            SizedBox(width: 6),
+                            Text(
+                              'Đã thêm',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            );
-          }
+            ),
+          );
+        }
 
-            return Draggable<Map<String, String>>(
-              data: {'recipeId': recipe.id, 'recipeName': recipe.recipeName},
-              onDragStarted: widget.onDragStarted,
-              feedback: Material(
-                elevation: 4,
-                borderRadius: BorderRadius.circular(14),
-                child: Container(
-                  width: 280,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: hasEnoughIngredients
-                        ? const Color(0xFFF0FDF4)
-                        : const Color(0xFFFEF9C2),
-                    border: Border.all(
-                      color: hasEnoughIngredients
-                          ? const Color(0xFFB8F7CF)
-                          : const Color(0xFFFFDF20),
-                      width: 2,
-                    ),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),
-                          color: Colors.grey[200],
-                        ),
-                        child: recipe.recipeImage.isNotEmpty
-                            ? ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: Image.network(
-                                  recipe.recipeImage,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return const Icon(Icons.restaurant);
-                                  },
-                                ),
-                              )
-                            : const Icon(Icons.restaurant),
-                      ),
-                      const SizedBox(width: 12),
-                      Flexible(
-                        child: Text(
-                          recipe.recipeName,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xFF101727),
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              childWhenDragging: Opacity(
-                opacity: 0.3,
-                child: _buildDishContainer(
-                  recipe,
-                  hasEnoughIngredients,
-                  missingCount,
-                ),
-              ),
-              child: GestureDetector(
-                onTap: () =>
-                    widget.onDishSelected(recipe.id, recipe.recipeName),
-                child: _buildDishContainer(
-                  recipe,
-                  hasEnoughIngredients,
-                  missingCount,
-                ),
-              ),
-            );
-          },
+        return Draggable<Map<String, String>>(
+          data: {'recipeId': recipe.id, 'recipeName': recipe.recipeName},
+          onDragStarted: widget.onDragStarted,
+          feedback: Material(
+            elevation: 4,
+            borderRadius: BorderRadius.circular(14),
+            child: _buildDragFeedback(recipe, hasEnoughIngredients),
+          ),
+          childWhenDragging: Opacity(
+            opacity: 0.3,
+            child: _buildDishContainer(
+              recipe,
+              hasEnoughIngredients,
+              missingCount,
+            ),
+          ),
+          child: GestureDetector(
+            onTap: () => widget.onDishSelected(recipe.id, recipe.recipeName),
+            child: _buildDishContainer(
+              recipe,
+              hasEnoughIngredients,
+              missingCount,
+            ),
+          ),
         );
       },
+    );
+  }
+
+  Widget _buildDragFeedback(Recipe recipe, bool hasEnoughIngredients) {
+    return Container(
+      width: 280,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: hasEnoughIngredients
+            ? const Color(0xFFF0FDF4)
+            : const Color(0xFFFEF9C2),
+        border: Border.all(
+          color: hasEnoughIngredients
+              ? const Color(0xFFB8F7CF)
+              : const Color(0xFFFFDF20),
+          width: 2,
+        ),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildRecipeImage(recipe, 40),
+          const SizedBox(width: 12),
+          Flexible(
+            child: Text(
+              recipe.recipeName,
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF101727),
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1140,26 +1045,7 @@ class _DishSelectionFormState extends State<DishSelectionForm> {
       ),
       child: Row(
         children: [
-          Container(
-            width: 60,
-            height: 57,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              color: Colors.grey[200],
-            ),
-            child: recipe.recipeImage.isNotEmpty
-                ? ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: Image.network(
-                      recipe.recipeImage,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return const Icon(Icons.restaurant, size: 30);
-                      },
-                    ),
-                  )
-                : const Icon(Icons.restaurant, size: 30),
-          ),
+          _buildRecipeImage(recipe, 60),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -1202,9 +1088,31 @@ class _DishSelectionFormState extends State<DishSelectionForm> {
               ],
             ),
           ),
-        Text( "⋮⋮⋮")
+          const Text("⋮⋮⋮"),
         ],
       ),
+    );
+  }
+
+  Widget _buildRecipeImage(Recipe recipe, double size) {
+    return Container(
+      width: size,
+      height: size - 3,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(size == 40 ? 8 : 16),
+        color: Colors.grey[200],
+      ),
+      child: recipe.recipeImage.isNotEmpty
+          ? ClipRRect(
+              borderRadius: BorderRadius.circular(size == 40 ? 8 : 16),
+              child: Image.network(
+                recipe.recipeImage,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) =>
+                    Icon(Icons.restaurant, size: size == 40 ? 20 : 30),
+              ),
+            )
+          : Icon(Icons.restaurant, size: size == 40 ? 20 : 30),
     );
   }
 }
