@@ -101,15 +101,40 @@ class _AddIngredientPageState extends State<AddIngredientPage> {
   }
 
   Future<void> _takePhoto() async {
-    final XFile? photo = await _picker.pickImage(
-      source: ImageSource.camera,
-      imageQuality: 80,
-    );
+    try {
+      final XFile? photo = await _picker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 80,
+      );
 
-    if (photo != null) {
-      setState(() {
-        _image = File(photo.path);
-      });
+      if (photo != null) {
+        final file = File(photo.path);
+        
+        // Kiểm tra file có tồn tại không
+        if (await file.exists()) {
+          setState(() {
+            _image = file;
+          });
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Không thể lưu ảnh. Vui lòng thử lại.'),
+                backgroundColor: Colors.orange,
+              ),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi khi chụp ảnh: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -323,15 +348,79 @@ class _AddIngredientPageState extends State<AddIngredientPage> {
     // Upload image if selected
     if (_image != null) {
       try {
+        // Kiểm tra file có tồn tại không
+        final fileExists = await _image!.exists();
+        if (!fileExists) {
+          throw Exception('File ảnh không tồn tại tại đường dẫn: ${_image!.path}');
+        }
+
+        // Kiểm tra file có thể đọc được không
+        final fileLength = await _image!.length();
+        if (fileLength == 0) {
+          throw Exception('File ảnh rỗng hoặc không thể đọc được');
+        }
+
+        // Tạo reference với tên file unique
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        final randomId = timestamp.toString();
+        final fileName = 'ingredients/$randomId.jpg';
+        
+        // Chỉ định storage bucket rõ ràng
         final storageRef = FirebaseStorage.instance
             .ref()
-            .child('ingredients/${DateTime.now().millisecondsSinceEpoch}.jpg');
-        await storageRef.putFile(_image!);
-        imageUrl = await storageRef.getDownloadURL();
+            .child(fileName);
+
+        // Upload file với metadata
+        final uploadTask = storageRef.putFile(
+          _image!,
+          SettableMetadata(
+            contentType: 'image/jpeg',
+            customMetadata: {
+              'uploadedAt': DateTime.now().toIso8601String(),
+            },
+          ),
+        );
+
+        // Đợi upload hoàn thành
+        final snapshot = await uploadTask;
+        
+        // Kiểm tra upload có thành công không
+        if (snapshot.state != TaskState.success) {
+          throw Exception('Upload không thành công. Trạng thái: ${snapshot.state}');
+        }
+        
+        // Đợi một chút để đảm bảo file đã được xử lý trên server
+        await Future.delayed(const Duration(milliseconds: 500));
+        
+        // Lấy download URL từ snapshot reference (đảm bảo dùng đúng reference)
+        imageUrl = await snapshot.ref.getDownloadURL();
       } catch (e) {
         Navigator.pop(context); // Close loading
+        String errorMessage = 'Lỗi upload ảnh không xác định';
+        
+        if (e.toString().contains('File ảnh không tồn tại')) {
+          errorMessage = 'Không tìm thấy file ảnh. Vui lòng chụp ảnh lại hoặc kiểm tra quyền truy cập file.';
+        } else if (e.toString().contains('File ảnh rỗng')) {
+          errorMessage = 'File ảnh bị lỗi. Vui lòng chụp ảnh lại.';
+        } else if (e.toString().contains('PERMISSION_DENIED') || 
+            e.toString().contains('permission-denied')) {
+          errorMessage = 'Lỗi quyền truy cập: Vui lòng kiểm tra Firebase Storage Rules';
+        } else if (e.toString().contains('object-not-found') || 
+                   e.toString().contains('not-found')) {
+          errorMessage = 'Lỗi: Không tìm thấy file trên server. Có thể do Firebase Storage Rules chưa được cấu hình. Vui lòng kiểm tra Storage Rules trong Firebase Console.';
+        } else if (e.toString().contains('UNAVAILABLE') || 
+                   e.toString().contains('unavailable')) {
+          errorMessage = 'Lỗi kết nối: Vui lòng kiểm tra kết nối internet';
+        } else {
+          errorMessage = 'Lỗi upload ảnh: ${e.toString()}';
+        }
+        
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi upload ảnh: $e')),
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
         );
         return;
       }
@@ -347,6 +436,7 @@ class _AddIngredientPageState extends State<AddIngredientPage> {
       unit: selectedUnit!,
       expirationDate: selectedDate!,
       imageUrl: imageUrl,
+      householdId: isEditMode ? widget.ingredient!.householdId : '', // householdId sẽ được cập nhật trong service
     );
 
     final viewModel =
@@ -355,15 +445,46 @@ class _AddIngredientPageState extends State<AddIngredientPage> {
     try {
       if (isEditMode) {
         await viewModel.updateIngredient(widget.ingredient!.id, ingredient);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Cập nhật nguyên liệu thành công!'),
+            backgroundColor: Colors.green,
+          ),
+        );
       } else {
         await viewModel.addIngredient(ingredient);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Thêm nguyên liệu thành công!'),
+            backgroundColor: Colors.green,
+          ),
+        );
       }
       Navigator.pop(context); // Close loading
       Navigator.pop(context); // Close add page
     } catch (e) {
       Navigator.pop(context); // Close loading
+      String errorMessage = 'Lỗi không xác định';
+      
+      if (e.toString().contains('PERMISSION_DENIED') || 
+          e.toString().contains('permission-denied')) {
+        errorMessage = 'Lỗi quyền truy cập: Vui lòng kiểm tra Firestore Security Rules';
+      } else if (e.toString().contains('UNAVAILABLE') || 
+                 e.toString().contains('unavailable')) {
+        errorMessage = 'Lỗi kết nối: Vui lòng kiểm tra kết nối internet';
+      } else if (e.toString().contains('NOT_FOUND') || 
+                 e.toString().contains('not-found')) {
+        errorMessage = 'Không tìm thấy tài liệu cần cập nhật';
+      } else {
+        errorMessage = 'Lỗi: ${e.toString()}';
+      }
+      
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Lỗi: $e')),
+        SnackBar(
+          content: Text(errorMessage),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 5),
+        ),
       );
     }
   }

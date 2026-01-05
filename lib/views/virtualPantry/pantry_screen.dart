@@ -11,6 +11,15 @@ class PantryPage extends StatefulWidget {
 }
 
 class _PantryPageState extends State<PantryPage> {
+  @override
+  void initState() {
+    super.initState();
+    // Tự động load ingredients khi mở màn hình
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final viewModel = Provider.of<PantryViewModel>(context, listen: false);
+      viewModel.loadIngredients();
+    });
+  }
 
   Widget ingredientSection(BuildContext context, String title, List<Ingredient> items, PantryViewModel viewModel) {
     return Column(
@@ -35,49 +44,13 @@ class _PantryPageState extends State<PantryPage> {
                 ),
               );
             },
-            child: Stack(
-              children: [
-                IngredientCard(
-                  name: ingredient.name,
-                  quantity: '${ingredient.quantity} ${ingredient.unit}',
-                  expiry: ingredient.expirationDate.toString().split(' ')[0], // Format date
-                  status: viewModel.getStatus(ingredient),
-                  color: _getStatusColor(viewModel.getStatus(ingredient)),
-                  image: ingredient.imageUrl,
-                ),
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: IconButton(
-                    icon: Icon(Icons.delete, color: Colors.red, size: 20),
-                    onPressed: () {
-                      // Hiển thị dialog xác nhận xóa
-                      showDialog(
-                        context: context,
-                        builder: (BuildContext context) {
-                          return AlertDialog(
-                            title: Text('Xác nhận xóa'),
-                            content: Text('Bạn có chắc muốn xóa ${ingredient.name}?'),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.of(context).pop(),
-                                child: Text('Hủy'),
-                              ),
-                              TextButton(
-                                onPressed: () {
-                                  viewModel.deleteIngredient(ingredient.id);
-                                  Navigator.of(context).pop();
-                                },
-                                child: Text('Xóa', style: TextStyle(color: Colors.red)),
-                              ),
-                            ],
-                          );
-                        },
-                      );
-                    },
-                  ),
-                ),
-              ],
+            child: IngredientCard(
+              name: ingredient.name,
+              quantity: '${ingredient.quantity} ${ingredient.unit}',
+              expiry: ingredient.expirationDate.toString().split(' ')[0], // Format date
+              status: viewModel.getStatus(ingredient),
+              color: _getStatusColor(viewModel.getStatus(ingredient)),
+              image: ingredient.imageUrl,
             ),
           )).toList(),
         )

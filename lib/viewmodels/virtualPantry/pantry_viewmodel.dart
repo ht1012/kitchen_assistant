@@ -33,6 +33,11 @@ class PantryViewModel extends ChangeNotifier {
     await loadIngredients();
   }
 
+  Future<void> useIngredient(String id, double amount) async {
+    await _service.useIngredient(id, amount);
+    await loadIngredients();
+  }
+
   String getStatus(Ingredient i) {
     final days = i.expirationDate.difference(DateTime.now()).inDays;
     if (days < 0) return 'Hết hạn';

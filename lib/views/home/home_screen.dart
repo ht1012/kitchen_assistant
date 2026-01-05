@@ -4,8 +4,12 @@ import '../widgets/bottom_nav.dart';
 import '../notification/notification.dart';
 import '../shoppingList/shopping_list.dart';
 import '../mealPlanner/meal_planner.dart';
-
 import '../virtualPantry/pantry_screen.dart';
+import '../login/login-and-intro.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/services.dart';
+import '../../viewmodels/virtualPantry/pantry_viewmodel.dart';
+import 'package:provider/provider.dart';
 class Dashboard extends StatefulWidget {
   const Dashboard({super.key});
 
@@ -74,13 +78,69 @@ class _HomePage extends StatelessWidget {
   }
 }
 
-class _Header extends StatelessWidget {
+class _Header extends StatefulWidget {
   const _Header();
+
+  @override
+  State<_Header> createState() => _HeaderState();
+}
+
+class _HeaderState extends State<_Header> {
+  String householdName = 'Bếp Nhà Trang';
+  String householdCode = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadHouseholdInfo();
+  }
+
+  Future<void> _loadHouseholdInfo() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      householdName = prefs.getString('household_name') ?? 'Bếp Nhà Trang';
+      householdCode = prefs.getString('household_code') ?? '';
+    });
+  }
+
+  Future<void> _logout() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Đăng xuất'),
+          content: const Text('Bạn có chắc muốn đăng xuất?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Hủy'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Đăng xuất', style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirm == true) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+      if (context.mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const FirstScreen()),
+          (route) => false,
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.transparent, // quan trọng
+      color: Colors.transparent,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -94,42 +154,57 @@ class _Header extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Bếp Nhà Trang',
-                  style: TextStyle(
+                Text(
+                  householdName,
+                  style: const TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF075B33),
                   ),
                 ),
                 const SizedBox(height: 4),
-                Row(
-                  children: const [
-                    Text(
-                      'Mã: 24356182',
-                      style: TextStyle(
-                        color: Color(0xFF6A7282),
-                        fontSize: 12,
-                      ),
+                if (householdCode.isNotEmpty)
+                  GestureDetector(
+                    onTap: () {
+                      Clipboard.setData(ClipboardData(text: householdCode));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Đã sao chép mã!'),
+                          duration: Duration(seconds: 1),
+                        ),
+                      );
+                    },
+                    child: Row(
+                      children: [
+                        Text(
+                          'Mã: $householdCode',
+                          style: const TextStyle(
+                            color: Color(0xFF6A7282),
+                            fontSize: 12,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        const Icon(Icons.copy, size: 14, color: Colors.grey),
+                      ],
                     ),
-                    SizedBox(width: 4),
-                    Icon(Icons.copy, size: 14, color: Colors.grey),
-                  ],
-                ),
+                  ),
               ],
             ),
           ),
-          Column(
-            children: const [
-              Icon(Icons.logout, size: 20, color: Color(0xFF075B33)),
-              Text(
-                'Đăng xuất',
-                style: TextStyle(
-                  color: Color(0xFF075B33),
-                  fontSize: 10,
+          GestureDetector(
+            onTap: _logout,
+            child: const Column(
+              children: [
+                Icon(Icons.logout, size: 20, color: Color(0xFF075B33)),
+                Text(
+                  'Đăng xuất',
+                  style: TextStyle(
+                    color: Color(0xFF075B33),
+                    fontSize: 10,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           )
         ],
       ),
@@ -138,11 +213,60 @@ class _Header extends StatelessWidget {
 }
 
 
+// class _IngredientStatus extends StatelessWidget {
+//   const _IngredientStatus();
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return Column(
+//       crossAxisAlignment: CrossAxisAlignment.start,
+//       children: [
+//         const Text(
+//           'Tình trạng nguyên liệu',
+//           style: TextStyle(fontSize: 14, color: Color(0xFF697282)),
+//         ),
+//         const SizedBox(height: 12),
+//         Row(
+//           children: const [
+//             _StatusCard(
+//               count: '6',
+//               label: 'Tươi',
+//               bgColor: Colors.white,
+//               textColor: Color(0xFF00A63D),
+//             ),
+//             SizedBox(width: 12),
+//             _StatusCard(
+//               count: '2',
+//               label: 'Sắp hết hạn',
+//               bgColor: Color(0xFFFDFBE8),
+//               textColor: Color(0xFFD08700),
+//             ),
+//             SizedBox(width: 12),
+//             _StatusCard(
+//               count: '1',
+//               label: 'Hết hạn',
+//               bgColor: Color(0xFFFEF2F2),
+//               textColor: Color(0xFFE7000A),
+//             ),
+//           ],
+//         ),
+//       ],
+//     );
+//   }
+// }
+
 class _IngredientStatus extends StatelessWidget {
   const _IngredientStatus();
 
   @override
   Widget build(BuildContext context) {
+    // 1. Lấy dữ liệu từ ViewModel để đếm số lượng thực tế
+    final viewModel = context.watch<PantryViewModel>();
+    
+    final freshCount = viewModel.ingredients.where((i) => viewModel.getStatus(i) == 'Tươi').length;
+    final expiringCount = viewModel.ingredients.where((i) => viewModel.getStatus(i) == 'Sắp hết hạn').length;
+    final expiredCount = viewModel.ingredients.where((i) => viewModel.getStatus(i) == 'Hết hạn').length;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -152,26 +276,29 @@ class _IngredientStatus extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         Row(
-          children: const [
+          children: [
+            // Card Tươi
             _StatusCard(
-              count: '6',
+              count: freshCount.toString(),
               label: 'Tươi',
               bgColor: Colors.white,
-              textColor: Color(0xFF00A63D),
+              textColor: const Color(0xFF00A63D),
             ),
-            SizedBox(width: 12),
+            const SizedBox(width: 12),
+            // Card Sắp hết hạn
             _StatusCard(
-              count: '2',
+              count: expiringCount.toString(),
               label: 'Sắp hết hạn',
-              bgColor: Color(0xFFFDFBE8),
-              textColor: Color(0xFFD08700),
+              bgColor: const Color(0xFFFDFBE8),
+              textColor: const Color(0xFFD08700),
             ),
-            SizedBox(width: 12),
+            const SizedBox(width: 12),
+            // Card Hết hạn
             _StatusCard(
-              count: '1',
+              count: expiredCount.toString(),
               label: 'Hết hạn',
-              bgColor: Color(0xFFFEF2F2),
-              textColor: Color(0xFFE7000A),
+              bgColor: const Color(0xFFFEF2F2),
+              textColor: const Color(0xFFE7000A),
             ),
           ],
         ),

@@ -1,42 +1,141 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/virtualPantry/ingredient_model.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class IngredientService {
   final _collection =
       FirebaseFirestore.instance.collection('ingredient_inventory');
 
+  // Lấy household_id từ SharedPreferences
+  Future<String?> _getHouseholdId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('household_code');
+  }
+
   Future<List<Ingredient>> getIngredients() async {
-    final snapshot = await _collection.get();
+    final householdId = await _getHouseholdId();
+    if (householdId == null || householdId.isEmpty) {
+      return []; // Nếu chưa có household_id, trả về danh sách rỗng
+    }
+
+    // Lọc nguyên liệu theo household_id
+    final snapshot = await _collection
+        .where('household_id', isEqualTo: householdId)
+        .get();
     return snapshot.docs
         .map((doc) => Ingredient.fromFirestore(doc))
         .toList();
   }
 
   Future<void> addIngredient(Ingredient ingredient) async {
-    await _collection.add({
-      'ingredient_name': ingredient.name,
-      'quantity': ingredient.quantity,
-      'unit': ingredient.unit,
-      'expiration_date': Timestamp.fromDate(ingredient.expirationDate),
-      'ingredient_image': ingredient.imageUrl,
-      'category_id': ingredient.categoryId,
-      'category_name': ingredient.categoryName,
-    });
+    try {
+      final householdId = await _getHouseholdId();
+      if (householdId == null || householdId.isEmpty) {
+        throw Exception('Chưa có mã gia đình. Vui lòng đăng nhập lại.');
+      }
+
+      await _collection.add({
+        'ingredient_name': ingredient.name,
+        'quantity': ingredient.quantity,
+        'unit': ingredient.unit,
+        'expiration_date': Timestamp.fromDate(ingredient.expirationDate),
+        'ingredient_image': ingredient.imageUrl,
+        'category_id': ingredient.categoryId,
+        'category_name': ingredient.categoryName,
+        'household_id': householdId, // Lưu household_id
+      });
+    } catch (e) {
+      throw Exception('Không thể thêm nguyên liệu: ${e.toString()}');
+    }
   }
 
   Future<void> updateIngredient(String id, Ingredient ingredient) async {
-    await _collection.doc(id).update({
-      'ingredient_name': ingredient.name,
-      'quantity': ingredient.quantity,
-      'unit': ingredient.unit,
-      'expiration_date': Timestamp.fromDate(ingredient.expirationDate),
-      'ingredient_image': ingredient.imageUrl,
-      'category_id': ingredient.categoryId,
-      'category_name': ingredient.categoryName,
-    });
+    try {
+      final householdId = await _getHouseholdId();
+      if (householdId == null || householdId.isEmpty) {
+        throw Exception('Chưa có mã gia đình. Vui lòng đăng nhập lại.');
+      }
+
+      // Kiểm tra xem nguyên liệu có thuộc về household này không
+      final doc = await _collection.doc(id).get();
+      if (!doc.exists) {
+        throw Exception('Nguyên liệu không tồn tại');
+      }
+      final docHouseholdId = doc.data()?['household_id'];
+      if (docHouseholdId != householdId) {
+        throw Exception('Không có quyền cập nhật nguyên liệu này');
+      }
+
+      await _collection.doc(id).update({
+        'ingredient_name': ingredient.name,
+        'quantity': ingredient.quantity,
+        'unit': ingredient.unit,
+        'expiration_date': Timestamp.fromDate(ingredient.expirationDate),
+        'ingredient_image': ingredient.imageUrl,
+        'category_id': ingredient.categoryId,
+        'category_name': ingredient.categoryName,
+        'household_id': householdId, // Cập nhật household_id
+      });
+    } catch (e) {
+      throw Exception('Không thể cập nhật nguyên liệu: ${e.toString()}');
+    }
   }
 
   Future<void> deleteIngredient(String id) async {
-    await _collection.doc(id).delete();
+    try {
+      final householdId = await _getHouseholdId();
+      if (householdId == null || householdId.isEmpty) {
+        throw Exception('Chưa có mã gia đình. Vui lòng đăng nhập lại.');
+      }
+
+      // Kiểm tra xem nguyên liệu có thuộc về household này không
+      final doc = await _collection.doc(id).get();
+      if (!doc.exists) {
+        throw Exception('Nguyên liệu không tồn tại');
+      }
+      final docHouseholdId = doc.data()?['household_id'];
+      if (docHouseholdId != householdId) {
+        throw Exception('Không có quyền xóa nguyên liệu này');
+      }
+
+      await _collection.doc(id).delete();
+    } catch (e) {
+      throw Exception('Không thể xóa nguyên liệu: ${e.toString()}');
+    }
+  }
+
+  Future<void> useIngredient(String id, double amount) async {
+    try {
+      final householdId = await _getHouseholdId();
+      if (householdId == null || householdId.isEmpty) {
+        throw Exception('Chưa có mã gia đình. Vui lòng đăng nhập lại.');
+      }
+
+      final doc = await _collection.doc(id).get();
+      if (!doc.exists) {
+        throw Exception('Nguyên liệu không tồn tại');
+      }
+
+      // Kiểm tra xem nguyên liệu có thuộc về household này không
+      final docHouseholdId = doc.data()?['household_id'];
+      if (docHouseholdId != householdId) {
+        throw Exception('Không có quyền sử dụng nguyên liệu này');
+      }
+
+      final currentQuantity = (doc.data()!['quantity'] as num).toDouble();
+      final newQuantity = currentQuantity - amount;
+
+      if (newQuantity <= 0) {
+        // Nếu số lượng <= 0, xóa nguyên liệu
+        await _collection.doc(id).delete();
+      } else {
+        // Cập nhật số lượng mới
+        await _collection.doc(id).update({
+          'quantity': newQuantity,
+        });
+      }
+    } catch (e) {
+      throw Exception('Không thể sử dụng nguyên liệu: ${e.toString()}');
+    }
   }
 }

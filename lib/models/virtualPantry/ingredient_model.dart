@@ -9,6 +9,7 @@ class Ingredient {
   final String imageUrl;
   final String categoryId;
   final String categoryName;
+  final String householdId;
 
   Ingredient({
     required this.id,
@@ -19,6 +20,7 @@ class Ingredient {
     required this.imageUrl,
     required this.categoryId,
     required this.categoryName,
+    required this.householdId,
   });
 
   factory Ingredient.fromFirestore(DocumentSnapshot doc) {
@@ -26,13 +28,14 @@ class Ingredient {
 
     return Ingredient(
       id: doc.id,
-      name: data['ingredient_name'],
-      quantity: (data['quantity'] as num).toDouble(),
-      unit: data['unit'],
-      expirationDate: (data['expiration_date'] as Timestamp).toDate(),
+      name: data['ingredient_name'] ?? '',
+      quantity: (data['quantity'] as num?)?.toDouble() ?? 0.0,
+      unit: data['unit'] ?? '',
+      expirationDate: (data['expiration_date'] as Timestamp?)?.toDate() ?? DateTime.now(),
       imageUrl: data['ingredient_image'] ?? '',
-      categoryId: data['category_id'],
-      categoryName: data['category_name'],
+      categoryId: data['category_id'] ?? '',
+      categoryName: data['category_name'] ?? '',
+      householdId: data['household_id'] ?? '',
     );
   }
 }

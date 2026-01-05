@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:kitchen_assistant/services/login_service.dart';
 import 'dart:math';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/services.dart';
 class FirstScreen extends StatefulWidget {
   const FirstScreen({super.key});
 
@@ -60,11 +62,35 @@ class _FirstScreenState extends State<FirstScreen> {
       if (household == null) {
         throw 'Mã mời không tồn tại!';
       }
+      
+      // Lưu thông tin household vào SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('household_code', household.householdCode);
+      await prefs.setString('household_name', household.householdName);
+      
       Navigator.pushReplacementNamed(context, '/home');
     } catch (e) {
       if (mounted) {
+        String errorMessage = 'Lỗi không xác định';
+        
+        if (e.toString().contains('PERMISSION_DENIED') || 
+            e.toString().contains('permission-denied')) {
+          errorMessage = 'Lỗi quyền truy cập: Vui lòng kiểm tra Firestore Security Rules trong Firebase Console';
+        } else if (e.toString().contains('UNAVAILABLE') || 
+                   e.toString().contains('unavailable')) {
+          errorMessage = 'Lỗi kết nối: Vui lòng kiểm tra kết nối internet';
+        } else if (e.toString().contains('Mã mời không tồn tại')) {
+          errorMessage = 'Mã mời không tồn tại!';
+        } else {
+          errorMessage = 'Lỗi: ${e.toString()}';
+        }
+        
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
         );
       }
     } finally {
@@ -99,15 +125,104 @@ class _FirstScreenState extends State<FirstScreen> {
         inviteCode
       );
 
+      // Lưu thông tin household vào SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('household_code', inviteCode);
+      await prefs.setString('household_name', name);
       
       if (!mounted) {
         return;
       }
+      
+      // Hiển thị dialog với mã gia đình
+      // showDialog(
+      //   context: context,
+      //   barrierDismissible: false,
+      //   builder: (BuildContext context) {
+      //     return AlertDialog(
+      //       title: const Text('Tạo hộ gia đình thành công!'),
+      //       content: Column(
+      //         mainAxisSize: MainAxisSize.min,
+      //         crossAxisAlignment: CrossAxisAlignment.start,
+      //         children: [
+      //           Text('Tên hộ gia đình: $name'),
+      //           const SizedBox(height: 12),
+      //           const Text('Mã gia đình của bạn:'),
+      //           const SizedBox(height: 8),
+      //           Row(
+      //             children: [
+      //               Expanded(
+      //                 child: Container(
+      //                   padding: const EdgeInsets.all(12),
+      //                   decoration: BoxDecoration(
+      //                     color: Colors.grey[200],
+      //                     borderRadius: BorderRadius.circular(8),
+      //                   ),
+      //                   child: Text(
+      //                     inviteCode,
+      //                     style: const TextStyle(
+      //                       fontSize: 18,
+      //                       fontWeight: FontWeight.bold,
+      //                       letterSpacing: 2,
+      //                     ),
+      //                   ),
+      //                 ),
+      //               ),
+      //               const SizedBox(width: 8),
+      //               IconButton(
+      //                 icon: const Icon(Icons.copy),
+      //                 onPressed: () {
+      //                   Clipboard.setData(ClipboardData(text: inviteCode));
+      //                   ScaffoldMessenger.of(context).showSnackBar(
+      //                     const SnackBar(
+      //                       content: Text('Đã sao chép mã!'),
+      //                       duration: Duration(seconds: 1),
+      //                     ),
+      //                   );
+      //                 },
+      //               ),
+      //             ],
+      //           ),
+      //           const SizedBox(height: 8),
+      //           const Text(
+      //             'Lưu mã này để chia sẻ với các thành viên khác',
+      //             style: TextStyle(fontSize: 12, color: Colors.grey),
+      //           ),
+      //         ],
+      //       ),
+      //       actions: [
+      //         TextButton(
+      //           onPressed: () {
+      //             Navigator.of(context).pop();
+      //             Navigator.pushReplacementNamed(context, '/home');
+      //           },
+      //           child: const Text('Đóng'),
+      //         ),
+      //       ],
+      //     );
+      //   },
+      // );
       Navigator.pushReplacementNamed(context, '/home');
     } catch (e) {
       if (mounted) {
+        String errorMessage = 'Lỗi không xác định';
+        
+        if (e.toString().contains('PERMISSION_DENIED') || 
+            e.toString().contains('permission-denied')) {
+          errorMessage = 'Lỗi quyền truy cập: Vui lòng kiểm tra Firestore Security Rules trong Firebase Console. Đảm bảo collection "households" cho phép read và write.';
+        } else if (e.toString().contains('UNAVAILABLE') || 
+                   e.toString().contains('unavailable')) {
+          errorMessage = 'Lỗi kết nối: Vui lòng kiểm tra kết nối internet';
+        } else {
+          errorMessage = 'Lỗi: ${e.toString()}';
+        }
+        
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 6),
+          ),
         );
       }
     } finally {
