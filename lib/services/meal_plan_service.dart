@@ -9,15 +9,30 @@ class MealPlanService {
     DateTime start,
     DateTime end,
   ) {
+    // Chuẩn hóa ngày bắt đầu và kết thúc
+    final startDate = DateTime(start.year, start.month, start.day);
+    final endDate = DateTime(end.year, end.month, end.day, 23, 59, 59);
+
     return _db
         .collection('meal_plans')
         .where('household_id', isEqualTo: householdId)
-        .where('date', isGreaterThanOrEqualTo: start.toIso8601String())
-        .where('date', isLessThanOrEqualTo: end.toIso8601String())
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((d) => MealPlan.fromFirestore(d.id, d.data()))
-            .toList());
+        .map((snapshot) {
+      final allMealPlans = snapshot.docs
+          .map((d) => MealPlan.fromFirestore(d.id, d.data()))
+          .toList();
+
+      // Filter theo ngày trong code để tránh vấn đề với format date
+      return allMealPlans.where((meal) {
+        final mealDate = DateTime(
+          meal.date.year,
+          meal.date.month,
+          meal.date.day,
+        );
+        return mealDate.isAfter(startDate.subtract(const Duration(days: 1))) &&
+            mealDate.isBefore(endDate.add(const Duration(days: 1)));
+      }).toList();
+    });
   }
 
   Future<void> addMealPlan({
@@ -26,11 +41,15 @@ class MealPlanService {
     required String recipeId,
     required String householdId,
   }) async {
+    // Chuẩn hóa ngày (chỉ lấy năm/tháng/ngày, không có giờ)
+    final normalizedDate = DateTime(date.year, date.month, date.day);
+
     await _db.collection('meal_plans').add({
-      'date': date.toIso8601String(),
+      'date': normalizedDate.toIso8601String(),
       'meal_time': mealTime,
       'recipe_id': recipeId,
       'household_id': householdId,
+      'created_at': FieldValue.serverTimestamp(),
     });
   }
 
