@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:kitchen_assistant/views/login/login-and-intro.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:kitchen_assistant/views/recipes/suggested_recipes.dart';
 import 'firebase_options.dart';
 import 'package:provider/provider.dart';
 import 'viewmodels/virtualPantry/pantry_viewmodel.dart';
@@ -49,9 +50,11 @@ class MyApp extends StatelessWidget {
               primarySwatch: Colors.blue,
             ),
             home: const FirstScreen(),
+            initialRoute: '/',
             routes: {
-              '': (context) => const FirstScreen(),
+              '/': (context) => const FirstScreen(),
               '/home': (context) => const Dashboard(),
+              '/home/recipes': (context) => const Recipes(),
             },
           ),
           
