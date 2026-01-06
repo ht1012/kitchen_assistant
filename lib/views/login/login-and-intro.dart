@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-
+import 'package:kitchen_assistant/services/login_service.dart';
+import 'dart:math';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/services.dart';
 class FirstScreen extends StatefulWidget {
   const FirstScreen({super.key});
 
@@ -10,7 +13,12 @@ class FirstScreen extends StatefulWidget {
 class _FirstScreenState extends State<FirstScreen> {
   // 1. Tạo controller để điều khiển PageView
   final PageController _pageController = PageController();
+  final TextEditingController _joinCodeController = TextEditingController();
+  final TextEditingController _familyNameController = TextEditingController();
+  bool _isLoading = false;
 
+  // Khởi tạo Service
+  late final LoginService _loginService = LoginService();
   @override
   void initState() {
     super.initState();
@@ -19,13 +27,13 @@ class _FirstScreenState extends State<FirstScreen> {
   }
 
   void _startTimer() {
-    Future.delayed(const Duration(seconds: 2), () {
+    Future.delayed(const Duration(seconds: 3), () {
       // Kiểm tra xem màn hình còn tồn tại không trước khi chuyển trang (tránh lỗi)
       if (mounted) {
         _pageController.animateToPage(
           1, // Chuyển sang trang Login (index 1)
           duration: const Duration(milliseconds: 800), // Thời gian hiệu ứng trượt
-          curve: Curves.linearToEaseOut, // Hiệu ứng mượt mà
+          curve: Curves.easeOutQuart, // Hiệu ứng mượt mà
         );
       }
     });
@@ -35,17 +43,140 @@ class _FirstScreenState extends State<FirstScreen> {
   void dispose() {
     _pageController.dispose(); // Giải phóng controller khi thoát màn hình
     super.dispose();
+    _joinCodeController.dispose();
+    _familyNameController.dispose();
   }
 
+  
+  // --- LOGIC 1: THAM GIA (Sử dụng LoginService) ---
+  Future<void> _handleJoinFamily() async {
+    final code = _joinCodeController.text.trim(); // Giữ nguyên case theo DB của bạn
+    if (code.isEmpty) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      // 1. Gọi Service tìm nhà
+      final household = await _loginService.getHouseholdByCode(code);
+      if (!mounted) return;
+      if (household == null) {
+        throw 'Mã mời không tồn tại!';
+      }
+      
+      // Lưu thông tin household vào SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('household_code', household.householdCode);
+      await prefs.setString('household_name', household.householdName);
+      
+      Navigator.pushReplacementNamed(context, '/home');
+    } catch (e) {
+      if (mounted) {
+        String errorMessage = 'Lỗi không xác định';
+        
+        if (e.toString().contains('PERMISSION_DENIED') || 
+            e.toString().contains('permission-denied')) {
+          errorMessage = 'Lỗi quyền truy cập: Vui lòng kiểm tra Firestore Security Rules trong Firebase Console';
+        } else if (e.toString().contains('UNAVAILABLE') || 
+                   e.toString().contains('unavailable')) {
+          errorMessage = 'Lỗi kết nối: Vui lòng kiểm tra kết nối internet';
+        } else if (e.toString().contains('Mã mời không tồn tại')) {
+          errorMessage = 'Mã mời không tồn tại!';
+        } else {
+          errorMessage = 'Lỗi: ${e.toString()}';
+        }
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  // --- LOGIC 2: TẠO MỚI (Sử dụng LoginService) ---
+  Future<void> _handleCreateFamily() async {
+    final String name = _familyNameController.text.trim();
+    if (name.isEmpty) return;
+
+    
+    if (name.length < 10){
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text( 'Tên hộ gia đình phải có ít nhất 10 ký tự!'), backgroundColor: Colors.orange));
+      return;
+    }
+    if (name.contains(RegExp(r'[!@#<>?":_`~;[\]\\|=+)]'))){
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text( 'Tên hộ gia đình không được chứa ký tự đặc biệt hoặc số!'), backgroundColor: Colors.orange));
+      return;
+    }
+    setState(() => _isLoading = true);
+    try {
+      // 1. Tạo mã random
+      String inviteCode = _generateRandomCode(5);
+
+      // 2. Gọi Service tạo nhà mới
+      await _loginService.createHousehold(
+        name, 
+        inviteCode
+      );
+
+      // Lưu thông tin household vào SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('household_code', inviteCode);
+      await prefs.setString('household_name', name);
+      
+      if (!mounted) {
+        return;
+      }
+      Navigator.pushReplacementNamed(context, '/home');
+    } catch (e) {
+      if (mounted) {
+        String errorMessage = 'Lỗi không xác định';
+        
+        if (e.toString().contains('PERMISSION_DENIED') || 
+            e.toString().contains('permission-denied')) {
+          errorMessage = 'Lỗi quyền truy cập: Vui lòng kiểm tra Firestore Security Rules trong Firebase Console. Đảm bảo collection "households" cho phép read và write.';
+        } else if (e.toString().contains('UNAVAILABLE') || 
+                   e.toString().contains('unavailable')) {
+          errorMessage = 'Lỗi kết nối: Vui lòng kiểm tra kết nối internet';
+        } else {
+          errorMessage = 'Lỗi: ${e.toString()}';
+        }
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 6),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  String _generateRandomCode(int length) {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    Random rnd = Random();
+    return String.fromCharCodes(Iterable.generate(
+      length, (_) => chars.codeUnitAt(rnd.nextInt(chars.length)),
+    ));
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: PageView(
         controller: _pageController,
         // (Tùy chọn) physics: NeverScrollableScrollPhysics(), // Nếu muốn CHẶN người dùng tự vuốt
-        children: const [
+        children:[
           IntroApp(),
-          Login(),
+          Login(joinCodeController: _joinCodeController, familyNameController: _familyNameController, isLoading: _isLoading, handleJoinFamily: _handleJoinFamily, handleCreateFamily: _handleCreateFamily),
         ],
       ),
     );
@@ -88,7 +219,7 @@ class IntroApp extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: const [
-                _AppIcon(),
+                _AppIcon(iconUrl: 'assets/icons/iconIntro.png', heroTags: 'icon_intro_tag',),
                 SizedBox(height: 16),
                 _Title(text: 'Bếp Trợ Lý'),
                 SizedBox(height: 8),
@@ -103,11 +234,15 @@ class IntroApp extends StatelessWidget {
 }
 
 class _AppIcon extends StatelessWidget {
-  const _AppIcon();
+  final String iconUrl;
+  final String heroTags;
+  const _AppIcon({super.key, required this.iconUrl, required this.heroTags});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return Hero(
+      tag: heroTags,
+      child:Container(
       width: 64,
       height: 64,
       decoration: BoxDecoration(
@@ -116,7 +251,8 @@ class _AppIcon extends StatelessWidget {
         ),
         borderRadius: BorderRadius.circular(16),
       ),
-      child: const Icon(Icons.flash_on, color: Colors.white, size: 32),
+      child: Image.asset('${iconUrl}'),
+    )
     );
   }
 }
@@ -160,7 +296,12 @@ class _Subtitle extends StatelessWidget {
 }
 
 class Login extends StatelessWidget {
-  const Login({super.key});
+  final TextEditingController joinCodeController;
+  final TextEditingController familyNameController;
+  final bool isLoading;
+  final Future<void> Function() handleJoinFamily;
+  final Future<void> Function() handleCreateFamily;
+  const Login({super.key, required this.joinCodeController, required this.familyNameController, required this.isLoading, required this.handleJoinFamily, required this.handleCreateFamily});
 
   @override
   Widget build(BuildContext context) {
@@ -186,17 +327,17 @@ class Login extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const _AppIcon(), // Tái sử dụng Icon cho gọn
+                  const _AppIcon(iconUrl: 'assets/icons/iconFamily.png', heroTags: 'icon_family_tag',), // Tái sử dụng Icon cho gọn
                   const SizedBox(height: 16),
                   const _Title(text: "Tham gia Hộ Gia Đình"),
                   const SizedBox(height: 8),
                   const _Subtitle(text: "Tham gia hộ gia đình hiện có hoặc tạo rmới để bắt đầu"),
                   const SizedBox(height: 32),
-                  _buildJoinFamily(),
+                  _buildJoinFamily(joinCodeController),
                   const SizedBox(height: 24),
                   _buildDivider(),
                   const SizedBox(height: 24),
-                  _buildCreateFamily(),
+                  _buildCreateFamily(familyNameController),
                 ],
               ),
             ),
@@ -207,18 +348,30 @@ class Login extends StatelessWidget {
   }
 
   // ===== Widgets Login logic =====
-  
-  Widget _buildJoinFamily() {
+
+  Widget _buildJoinFamily(TextEditingController joinCodeController) {
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Nhập mã mời', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF354152))),
+        Row(
+          children: [
+            Image.asset('assets/icons/key.png'),
+            SizedBox(width: 6),
+            const Text('Nhập mã mời', style: TextStyle(fontSize: 16, color: Color(0xFF354152), fontFamily: 'Inter')),
+          ],
+        ),
         const SizedBox(height: 8),
-        const TextField(
+        TextField(
+          controller: joinCodeController,
           decoration: InputDecoration(
             hintText: 'VD: BEP123',
-            border: OutlineInputBorder(),
+            hintStyle: const TextStyle(color: Color(0x7F0A0A0A)),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
             contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            
           ),
         ),
         const SizedBox(height: 12),
@@ -231,8 +384,8 @@ class Login extends StatelessWidget {
               padding: const EdgeInsets.only(top: 12, bottom: 12),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
-            onPressed: () {},
-            child: const Text('Tham gia', style: TextStyle(fontSize: 24, fontFamily: "Inter",)),
+            onPressed: isLoading ? null : handleJoinFamily,
+            child: const Text('Tham gia', style: TextStyle(fontSize: 16, fontFamily: "Inter", color: Color(0xFFFFFFFF))),
           ),
         ),
       ],
@@ -247,7 +400,7 @@ class Login extends StatelessWidget {
           padding: EdgeInsets.symmetric(horizontal: 8),
           child: Text(
             'Hoặc',
-            style: TextStyle(color: Color(0xFF697282)),
+            style: TextStyle(color: Color(0xFF6A7282)),
           ),
         ),
         Expanded(child: Divider(color: Color(0xFFD0D5DB))),
@@ -255,16 +408,29 @@ class Login extends StatelessWidget {
     );
   }
 
-  Widget _buildCreateFamily() {
+  Widget _buildCreateFamily(TextEditingController familyNameController) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Tên hộ gia đình', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF354152))),
+        Row(
+          children: [
+            Image.asset('assets/icons/home.png'),
+            SizedBox(width: 6),
+            Text(
+              'Tên hộ gia đình',
+              style: TextStyle(fontSize: 16, color: Color(0xFF354152), fontFamily: 'Inter'),
+            ),
+          ],
+        ),
         const SizedBox(height: 8),
-        const TextField(
+        TextField(
+          controller: familyNameController,
           decoration: InputDecoration(
             hintText: 'VD: Gia đình Nguyễn',
-            border: OutlineInputBorder(),
+            hintStyle: const TextStyle(color: Color(0x7F0A0A0A)),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10)
+            ),
             contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           ),
         ),
@@ -274,13 +440,15 @@ class Login extends StatelessWidget {
           child: OutlinedButton(
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 14),
-              side: const BorderSide(color: Color(0xFF00C850), width: 1.5),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              side: const BorderSide(color: Color(0xFF00C950), width: 2, strokeAlign: BorderSide.strokeAlignCenter),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8)),
             ),
-            onPressed: () {},
+            onPressed: isLoading ? null : handleCreateFamily,
             child: const Text(
               'Tạo hộ gia đình',
-              style: TextStyle(color: Color(0xFF00A63D), fontSize: 24),
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Color(0xFF00A63E), fontSize: 16, fontFamily: "Inter", fontWeight: FontWeight.w400),
             ),
           ),
         ),

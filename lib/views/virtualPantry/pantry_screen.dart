@@ -1,64 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../viewmodels/virtualPantry/pantry_viewmodel.dart';
+import '../../models/virtualPantry/ingredient_model.dart';
 import 'add_ingredients.dart';
-class PantryPage extends StatelessWidget {
+class PantryPage extends StatefulWidget {
   const PantryPage({super.key});
-  static const List<Map<String, String>> fruits = [
-    {
-      "name": "Táo",
-      "quantity": "6 quả",
-      "expiry": "8/12/2025",
-      "status": "Tươi",
-      "color": "0xFF008235",
-      "image": "assets/images/tao.png"
-    },
-  ];
 
-  static const List<Map<String, String>> dairy = [
-    {
-      "name": "Sữa",
-      "quantity": "6 L",
-      "expiry": "8/12/2025",
-      "status": "Sắp hết hạn",
-      "color": "0xFFA65F00",
-      "image": "assets/images/sua.png"
-    },
-    {
-      "name": "Trứng",
-      "quantity": "6 quả",
-      "expiry": "6/12/2025",
-      "status": "Tươi",
-      "color": "0xFF008235",
-      "image": "assets/images/trung.png"
-    },
-    {
-      "name": "Sữa chua",
-      "quantity": "500g",
-      "expiry": "5/12/2025",
-      "status": "Hết hạn",
-      "color": "0xFFC10007",
-      "image": "assets/images/suachua.png"
-    },
-  ];
-  static const List<Map<String, String>> meatAndFish = [
-    {
-      "name": "Thịt gà",
-      "quantity": "500g",
-      "expiry": "10/12/2025",
-      "status": "Tươi",
-      "color": "0xFF008235",
-      "image": "assets/images/thitga.png"
-    },
-    {
-      "name": "Cá hồi",
-      "quantity": "300g",
-      "expiry": "9/12/2025",
-      "status": "Sắp hết hạn",
-      "color": "0xFFA65F00",
-      "image": "assets/images/cahoi.png"
-    },
-  ];
+  @override
+  State<PantryPage> createState() => _PantryPageState();
+}
 
-  Widget ingredientSection(BuildContext context,String title, List<Map<String, String>> items) {
+class _PantryPageState extends State<PantryPage> {
+  @override
+  void initState() {
+    super.initState();
+    // Tự động load ingredients khi mở màn hình
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final viewModel = Provider.of<PantryViewModel>(context, listen: false);
+      viewModel.loadIngredients();
+    });
+  }
+
+  Widget ingredientSection(BuildContext context, String title, List<Ingredient> items, PantryViewModel viewModel) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -69,106 +32,137 @@ class PantryPage extends StatelessWidget {
         ),
         SizedBox(height: 12),
         Column(
-          children: items.map((item) => InkWell(
+          children: items.map((ingredient) => InkWell(
             onTap: () {
+              // Có thể truyền ingredient thay vì Map
               Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => AddIngredientPage(
-                    ingredientData: item, // ⭐ TRUYỀN DỮ LIỆU
+                    ingredient: ingredient, // Truyền Ingredient object
                   ),
                 ),
               );
             },
             child: IngredientCard(
-              name: item['name']!,
-              quantity: item['quantity']!,
-              expiry: item['expiry']!,
-              status: item['status']!,
-              color: Color(int.parse(item['color']!)),
-              image: item['image']!,
+              name: ingredient.name,
+              quantity: '${ingredient.quantity} ${ingredient.unit}',
+              expiry: ingredient.expirationDate.toString().split(' ')[0], // Format date
+              status: viewModel.getStatus(ingredient),
+              color: _getStatusColor(viewModel.getStatus(ingredient)),
+              image: ingredient.imageUrl,
             ),
           )).toList(),
         )
       ],
     );
   }
+
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case 'Tươi':
+        return Color(0xFF00A63D);
+      case 'Sắp hết hạn':
+        return Color(0xFFD08700);
+      case 'Hết hạn':
+        return Color(0xFFE7000A);
+      default:
+        return Colors.black;
+    }
+  }
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: const Color(0xFF00C850),
-        child: const Icon(Icons.add, color: Colors.white),
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const AddIngredientPage(),
-            ),
-          );
-        },
-      ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFF0FDF4),
-              Colors.white,
-            ],
-          ),
+    final viewModel = context.watch<PantryViewModel>();
+
+    // Lọc ingredients theo status
+    final freshIngredients = viewModel.ingredients.where((i) => viewModel.getStatus(i) == 'Tươi').toList();
+    final expiringIngredients = viewModel.ingredients.where((i) => viewModel.getStatus(i) == 'Sắp hết hạn').toList();
+    final expiredIngredients = viewModel.ingredients.where((i) => viewModel.getStatus(i) == 'Hết hạn').toList();
+
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Color(0xFFF0FDF4),
+            Colors.white,
+          ],
         ),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Kho nguyên liệu",
-                  style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w400,
-                      color: Color(0xFF101727)),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  "Quản lý nguyên liệu của bạn",
-                  style: TextStyle(
-                      fontSize: 14.8,
-                      fontWeight: FontWeight.w400,
-                      color: Color(0xFF697282)),
-                ),
-                SizedBox(height: 16),
-                Row(
-                  children: const [
-                    _StatusCard(
-                      count: '6',
-                      label: 'Tươi',
-                      bgColor: Colors.white,
-                      textColor: Color(0xFF00A63D),
-                    ),
-                    SizedBox(width: 12),
-                    _StatusCard(
-                      count: '2',
-                      label: 'Sắp hết hạn',
-                      bgColor: Color(0xFFFDFBE8),
-                      textColor: Color(0xFFD08700),
-                    ),
-                    SizedBox(width: 12),
-                    _StatusCard(
-                      count: '1',
-                      label: 'Hết hạn',
-                      bgColor: Color(0xFFFEF2F2),
-                      textColor: Color(0xFFE7000A),
-                    ),
-                  ],
-                ),
-                ingredientSection(context,"Quả & rau", fruits),
-                ingredientSection(context,"Trứng & Sữa", dairy),
-                ingredientSection(context,"Thịt & Cá", meatAndFish),
-              ],
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        floatingActionButton: FloatingActionButton(
+          backgroundColor: const Color(0xFF00C850),
+          child: const Icon(Icons.add, color: Colors.white),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const AddIngredientPage(),
+              ),
+            );
+          },
+        ),
+        body: SafeArea(
+          child: RefreshIndicator(
+            onRefresh: () async {
+              await viewModel.loadIngredients();
+            },
+            child: SingleChildScrollView(
+              physics: AlwaysScrollableScrollPhysics(),
+              padding: EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Kho nguyên liệu",
+                    style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w400,
+                        color: Color(0xFF101727)),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    "Quản lý nguyên liệu của bạn",
+                    style: TextStyle(
+                        fontSize: 14.8,
+                        fontWeight: FontWeight.w400,
+                        color: Color(0xFF697282)),
+                  ),
+                  SizedBox(height: 16),
+                  Row(
+                    children: [
+                      _StatusCard(
+                        count: freshIngredients.length.toString(),
+                        label: 'Tươi',
+                        bgColor: Colors.white,
+                        textColor: Color(0xFF00A63D),
+                      ),
+                      SizedBox(width: 12),
+                      _StatusCard(
+                        count: expiringIngredients.length.toString(),
+                        label: 'Sắp hết hạn',
+                        bgColor: Color(0xFFFDFBE8),
+                        textColor: Color(0xFFD08700),
+                      ),
+                      SizedBox(width: 12),
+                      _StatusCard(
+                        count: expiredIngredients.length.toString(),
+                        label: 'Hết hạn',
+                        bgColor: Color(0xFFFEF2F2),
+                        textColor: Color(0xFFE7000A),
+                      ),
+                    ],
+                  ),
+                  if (freshIngredients.isNotEmpty)
+                    ingredientSection(context, "Tươi", freshIngredients, viewModel),
+                  if (expiringIngredients.isNotEmpty)
+                    ingredientSection(context, "Sắp hết hạn", expiringIngredients, viewModel),
+                  if (expiredIngredients.isNotEmpty)
+                    ingredientSection(context, "Hết hạn", expiredIngredients, viewModel),
+                ],
+              ),
             ),
           ),
         ),
@@ -262,7 +256,7 @@ class IngredientCard extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
               image: DecorationImage(
-                image: AssetImage(image),
+                image: image.startsWith('http') ? NetworkImage(image) : AssetImage(image),
                 fit: BoxFit.cover,
               ),
             ),
