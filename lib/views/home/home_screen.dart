@@ -376,24 +376,19 @@ class _SuggestHeader extends StatelessWidget {
         fontWeight: FontWeight.w600,
           ),
         ),
-        GestureDetector(
-          onTap: (){
-        Navigator.push(
-            context,
-            MaterialPageRoute(
-          builder: (context) => Recipes(),
-          fullscreenDialog: false,
-            ),
-        );
+        
+        TextButton(
+          onPressed: (){
+            Navigator.pushNamed(context, '/home/recipes');
           },
           child: Text(
-        'Các gợi ý khác',
-          style: TextStyle(
-          color: Color(0xFF00C850),
-          fontWeight: FontWeight.w700,
+            'Các gợi ý khác',
+            style: TextStyle(
+              color: Color(0xFF00C850),
+              fontWeight: FontWeight.w700,
+            ), 
           ),
-          ),
-        ),
+        )
       ],
     );
   }
