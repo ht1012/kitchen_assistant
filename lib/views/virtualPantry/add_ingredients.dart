@@ -37,7 +37,17 @@ class _AddIngredientPageState extends State<AddIngredientPage> {
     {'id': 'fruit', 'name': 'Trái cây'},
     {'id': 'vegetable', 'name': 'Rau củ'},
     {'id': 'meat', 'name': 'Thịt'},
+    {'id': 'seafood', 'name': 'Hải sản'},
+    {'id': 'dairy', 'name': 'Sữa & chế phẩm'},
+    {'id': 'grain', 'name': 'Gạo & ngũ cốc'},
+    {'id': 'spice', 'name': 'Gia vị & thảo mộc'},
+    {'id': 'sauce', 'name': 'Nước sốt & gia vị lỏng'},
+    {'id': 'oil', 'name': 'Dầu & mỡ'},
+    {'id': 'frozen', 'name': 'Đông lạnh'},
+    {'id': 'canned', 'name': 'Đồ hộp'},
+    {'id': 'snack', 'name': 'Ăn vặt & bánh kẹo'},
     {'id': 'drink', 'name': 'Đồ uống'},
+    {'id': 'other', 'name': 'Khác'},
   ];
 
   final List<String> units = [
