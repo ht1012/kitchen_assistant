@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/virtualPantry/ingredient_model.dart';
 import '../../viewmodels/virtualPantry/pantry_viewmodel.dart';
+import '../../services/virtualPantry/barcode_service.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:mobile_scanner/mobile_scanner.dart';
-import 'dart:convert';
+import 'qr_scanner_page.dart';
 
 
 class AddIngredientPage extends StatefulWidget {
@@ -141,16 +141,125 @@ class _AddIngredientPageState extends State<AddIngredientPage> {
   }
 
   Future<void> _scanQRCode() async {
-    await Navigator.push(
+    final result = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => const QRScannerPage(),
       ),
-    ).then((result) {
-      if (result != null && result is Map<String, dynamic>) {
+    );
+    
+    if (result != null && result is Map<String, dynamic>) {
+      debugPrint('📦 Kết quả từ scanner: $result');
+      // Kiểm tra nếu là barcode (chỉ có số), tự động tra cứu
+      if (result.containsKey('barcode')) {
+        final barcode = result['barcode'] as String;
+        debugPrint('🔍 Phát hiện barcode: $barcode, bắt đầu tra cứu...');
+        await _lookupBarcode(barcode);
+      } else {
+        debugPrint('📝 Không phải barcode, xử lý như QR code thông thường');
         _handleQRResult(result);
       }
-    });
+    } else {
+      debugPrint('❌ Không có kết quả từ scanner');
+    }
+  }
+
+  Future<void> _lookupBarcode(String barcode) async {
+    // Hiển thị loading
+    if (!mounted) return;
+    
+    // Thông báo đã quét được mã vạch
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Đã quét được mã vạch: $barcode. Đang tra cứu thông tin...'),
+          backgroundColor: Colors.blue,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+
+    try {
+      debugPrint('Bắt đầu tra cứu barcode: $barcode');
+      final productData = await BarcodeService.lookupBarcode(barcode);
+      debugPrint('Kết quả tra cứu: $productData');
+      
+      if (productData != null) {
+        // Điền thông tin vào form
+        if (productData['name'] != null) {
+          nameController.text = productData['name'] as String;
+        }
+        
+        if (productData['quantity'] != null && (productData['quantity'] as String).isNotEmpty) {
+          quantityController.text = productData['quantity'] as String;
+        }
+        
+        if (productData['unit'] != null && units.contains(productData['unit'])) {
+          setState(() {
+            selectedUnit = productData['unit'] as String;
+          });
+        }
+        
+        if (productData['categoryId'] != null) {
+          setState(() {
+            selectedCategoryId = productData['categoryId'] as String;
+          });
+        }
+
+        if (mounted) {
+          Navigator.pop(context); // Đóng loading
+          
+          final productName = productData['name'] as String;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(productName != barcode 
+                  ? 'Đã tra cứu thông tin sản phẩm: $productName'
+                  : 'Đã tra cứu barcode nhưng thông tin hạn chế'),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      } else {
+        // Không tìm thấy sản phẩm trong database Open Food Facts
+        if (mounted) {
+          Navigator.pop(context); // Đóng loading
+          
+          // Chỉ điền mã vạch vào tên
+          nameController.text = barcode;
+          
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Đã quét được mã vạch: $barcode\nVui lòng nhập thông tin sản phẩm.'),
+                backgroundColor: Colors.blue,
+                duration: const Duration(seconds: 2),
+              ),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // Đóng loading
+        nameController.text = barcode;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi tra cứu: ${e.toString().length > 50 ? e.toString().substring(0, 50) + "..." : e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
   }
 
   void _handleQRResult(Map<String, dynamic> qrData) {
@@ -681,404 +790,4 @@ class _AddIngredientPageState extends State<AddIngredientPage> {
       borderRadius: BorderRadius.circular(16),
     );
   }
-}
-
-class QRScannerPage extends StatefulWidget {
-  const QRScannerPage({super.key});
-
-  @override
-  State<QRScannerPage> createState() => _QRScannerPageState();
-}
-
-class _QRScannerPageState extends State<QRScannerPage> {
-  final MobileScannerController controller = MobileScannerController();
-  final ImagePicker _galleryPicker = ImagePicker();
-
-  @override
-  void dispose() {
-    controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          MobileScanner(
-            controller: controller,
-            onDetect: (capture) {
-              final List<Barcode> barcodes = capture.barcodes;
-              if (barcodes.isNotEmpty) {
-                final barcode = barcodes.first;
-                if (barcode.rawValue != null) {
-                  _handleScannedCode(barcode.rawValue!);
-                }
-              }
-            },
-          ),
-          // Overlay với khung quét
-          CustomPaint(
-            painter: QRScannerOverlay(),
-            child: Container(),
-          ),
-          // Top bar
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Colors.white),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'Quét mã QR',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          // Instructions
-          const Positioned(
-            bottom: 140,
-            left: 0,
-            right: 0,
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                'Đưa mã QR vào khung ở giữa màn hình',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  shadows: [
-                    Shadow(
-                      color: Colors.black54,
-                      blurRadius: 6,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          // Bottom actions
-          Positioned(
-            bottom: 40,
-            left: 0,
-            right: 0,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _actionButton(
-                  label: 'Camera',
-                  icon: Icons.qr_code_scanner,
-                  onTap: () => controller.start(),
-                  isPrimary: true,
-                ),
-                const SizedBox(width: 16),
-                _actionButton(
-                  label: 'Gallery',
-                  icon: Icons.image,
-                  onTap: _pickFromGallery,
-                  isPrimary: false,
-                ),
-              ],
-            ),
-          )
-        ],
-      ),
-    );
-  }
-
-  Widget _actionButton({
-    required String label,
-    required IconData icon,
-    required VoidCallback onTap,
-    bool isPrimary = false,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-        decoration: BoxDecoration(
-          color: isPrimary ? const Color(0xFF00C850) : Colors.white24,
-          borderRadius: BorderRadius.circular(50),
-          border: Border.all(
-            color: isPrimary ? const Color(0xFF00C850) : Colors.white30,
-          ),
-          boxShadow: isPrimary
-              ? [
-                  BoxShadow(
-                    color: const Color(0xFF00C850).withOpacity(0.4),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
-              : null,
-        ),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              color: isPrimary ? Colors.white : Colors.white,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: const TextStyle(color: Colors.white, fontSize: 14),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _pickFromGallery() async {
-    try {
-      final XFile? image =
-          await _galleryPicker.pickImage(source: ImageSource.gallery);
-      if (image == null) return;
-
-      final capture = await controller.analyzeImage(image.path);
-
-      if (capture == null || capture.barcodes.isEmpty) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Không tìm thấy mã QR trong ảnh'),
-              backgroundColor: Colors.orange,
-            ),
-          );
-        }
-        return;
-      }
-
-      final raw = capture.barcodes.first.rawValue;
-      if (raw == null || raw.isEmpty) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Ảnh không chứa dữ liệu QR hợp lệ'),
-              backgroundColor: Colors.orange,
-            ),
-          );
-        }
-        return;
-      }
-
-      _handleScannedCode(raw);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Lỗi khi quét từ ảnh: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  void _handleScannedCode(String code) {
-    // Dừng scanner
-    controller.stop();
-    final parsed = _parseQRPayload(code);
-    if (mounted) {
-      Navigator.pop(context, parsed);
-    }
-  }
-
-  Map<String, dynamic> _parseQRPayload(String code) {
-    // 1) Thử JSON
-    try {
-      final data = jsonDecode(code);
-      if (data is Map<String, dynamic>) {
-        return _normalizeKeys(data);
-      }
-    } catch (_) {}
-
-    // 2) Thử URL/query string
-    final uri = Uri.tryParse(code);
-    if (uri != null && uri.queryParameters.isNotEmpty) {
-      final qp = uri.queryParameters;
-      return _normalizeKeys({
-        'name': qp['name'] ?? qp['product'] ?? qp['title'],
-        'quantity': qp['quantity'] ?? qp['qty'],
-        'unit': qp['unit'] ?? qp['u'],
-        'categoryId': qp['categoryId'] ?? qp['catId'],
-        'categoryName': qp['category'] ?? qp['cat'],
-        'expirationDate': qp['expirationDate'] ?? qp['exp'] ?? qp['date'],
-      });
-    }
-
-    // 3) Thử pattern key=value;key=value
-    if (code.contains('=')) {
-      final parts = code.replaceAll(';', '&').split('&');
-      final map = <String, String>{};
-      for (final p in parts) {
-        final kv = p.split('=');
-        if (kv.length == 2) {
-          map[kv[0].trim()] = kv[1].trim();
-        }
-      }
-      if (map.isNotEmpty) {
-        return _normalizeKeys(map);
-      }
-    }
-
-    // 4) Fallback: chỉ có name
-    return {'name': code};
-  }
-
-  Map<String, dynamic> _normalizeKeys(Map data) {
-    // Chuẩn hóa key về chuẩn app: name, quantity, unit, categoryId, categoryName, expirationDate
-    Map<String, dynamic> result = {};
-    data.forEach((k, v) {
-      final key = k.toString().toLowerCase();
-      switch (key) {
-        case 'name':
-        case 'product':
-        case 'title':
-          result['name'] = v;
-          break;
-        case 'quantity':
-        case 'qty':
-        case 'q':
-          result['quantity'] = v;
-          break;
-        case 'unit':
-        case 'u':
-          result['unit'] = v;
-          break;
-        case 'categoryid':
-        case 'catid':
-          result['categoryId'] = v;
-          break;
-        case 'category':
-        case 'cat':
-        case 'categoryname':
-          result['categoryName'] = v;
-          break;
-        case 'expirationdate':
-        case 'exp':
-        case 'expiry':
-        case 'date':
-          result['expirationDate'] = v;
-          break;
-        default:
-          // ignore extras
-          break;
-      }
-    });
-    return result;
-  }
-}
-
-// Custom painter cho overlay khung quét
-class QRScannerOverlay extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.black54
-      ..style = PaintingStyle.fill;
-
-    final path = Path()
-      ..addRect(Rect.fromLTWH(0, 0, size.width, size.height));
-
-    final scanArea = 250.0;
-    final left = (size.width - scanArea) / 2;
-    final top = (size.height - scanArea) / 2 - 50;
-    final scanRect = Rect.fromLTWH(left, top, scanArea, scanArea);
-
-    final cutoutPath = Path()
-      ..addRRect(
-        RRect.fromRectAndRadius(scanRect, const Radius.circular(16)),
-      );
-
-    final combinedPath = Path.combine(
-      PathOperation.difference,
-      path,
-      cutoutPath,
-    );
-
-    canvas.drawPath(combinedPath, paint);
-
-    // Vẽ khung quét
-    final borderPaint = Paint()
-      ..color = const Color(0xFF00C850)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3;
-
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(scanRect, const Radius.circular(16)),
-      borderPaint,
-    );
-
-    // Vẽ góc vuông
-    final cornerLength = 20.0;
-    final cornerPaint = Paint()
-      ..color = const Color(0xFF00C850)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 4;
-
-    // Góc trên trái
-    canvas.drawLine(
-      Offset(left, top + cornerLength),
-      Offset(left, top),
-      cornerPaint,
-    );
-    canvas.drawLine(
-      Offset(left, top),
-      Offset(left + cornerLength, top),
-      cornerPaint,
-    );
-
-    // Góc trên phải
-    canvas.drawLine(
-      Offset(left + scanArea - cornerLength, top),
-      Offset(left + scanArea, top),
-      cornerPaint,
-    );
-    canvas.drawLine(
-      Offset(left + scanArea, top),
-      Offset(left + scanArea, top + cornerLength),
-      cornerPaint,
-    );
-
-    // Góc dưới trái
-    canvas.drawLine(
-      Offset(left, top + scanArea - cornerLength),
-      Offset(left, top + scanArea),
-      cornerPaint,
-    );
-    canvas.drawLine(
-      Offset(left, top + scanArea),
-      Offset(left + cornerLength, top + scanArea),
-      cornerPaint,
-    );
-
-    // Góc dưới phải
-    canvas.drawLine(
-      Offset(left + scanArea - cornerLength, top + scanArea),
-      Offset(left + scanArea, top + scanArea),
-      cornerPaint,
-    );
-    canvas.drawLine(
-      Offset(left + scanArea, top + scanArea - cornerLength),
-      Offset(left + scanArea, top + scanArea),
-      cornerPaint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
