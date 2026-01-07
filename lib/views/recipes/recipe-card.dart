@@ -9,6 +9,8 @@ class RecipeCard extends StatelessWidget {
   final String steps;
   final List<String> tags;
   final int matchPercent;
+  final int sumIngredient;
+  final int fillIngredient;
   
   const RecipeCard({
     super.key,
@@ -18,6 +20,8 @@ class RecipeCard extends StatelessWidget {
     required this.steps,
     required this.tags,
     required this.matchPercent,
+    required this.sumIngredient,
+    required this.fillIngredient
   });
   Color _getTagColor(String tag) {
     // Hàm lấy màu sắc dựa trên thẻ
@@ -70,7 +74,7 @@ class RecipeCard extends StatelessWidget {
                     color: matchPercent == 100 ? Colors.green : Colors.orange,
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: Text(matchPercent == 100 ? '7/7' : '5/7', style: const TextStyle(color: Colors.white, fontSize: 12)),
+                  child: Text('${fillIngredient} / ${sumIngredient} ', style: const TextStyle(color: Colors.white, fontSize: 12)),
                 ),
               ),
             ],
