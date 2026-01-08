@@ -6,6 +6,48 @@ class IngredientService {
   final _collection =
       FirebaseFirestore.instance.collection('ingredient_inventory');
 
+  // Tạo "slug" thân thiện từ tên nguyên liệu (không dấu, snake_case)
+  String _slugify(String text) {
+    const replacements = {
+      'á': 'a', 'à': 'a', 'ả': 'a', 'ã': 'a', 'ạ': 'a',
+      'ă': 'a', 'ắ': 'a', 'ằ': 'a', 'ẳ': 'a', 'ẵ': 'a', 'ặ': 'a',
+      'â': 'a', 'ấ': 'a', 'ầ': 'a', 'ẩ': 'a', 'ẫ': 'a', 'ậ': 'a',
+      'đ': 'd',
+      'é': 'e', 'è': 'e', 'ẻ': 'e', 'ẽ': 'e', 'ẹ': 'e',
+      'ê': 'e', 'ế': 'e', 'ề': 'e', 'ể': 'e', 'ễ': 'e', 'ệ': 'e',
+      'í': 'i', 'ì': 'i', 'ỉ': 'i', 'ĩ': 'i', 'ị': 'i',
+      'ó': 'o', 'ò': 'o', 'ỏ': 'o', 'õ': 'o', 'ọ': 'o',
+      'ô': 'o', 'ố': 'o', 'ồ': 'o', 'ổ': 'o', 'ỗ': 'o', 'ộ': 'o',
+      'ơ': 'o', 'ớ': 'o', 'ờ': 'o', 'ở': 'o', 'ỡ': 'o', 'ợ': 'o',
+      'ú': 'u', 'ù': 'u', 'ủ': 'u', 'ũ': 'u', 'ụ': 'u',
+      'ư': 'u', 'ứ': 'u', 'ừ': 'u', 'ử': 'u', 'ữ': 'u', 'ự': 'u',
+      'ý': 'y', 'ỳ': 'y', 'ỷ': 'y', 'ỹ': 'y', 'ỵ': 'y',
+      'Á': 'A', 'À': 'A', 'Ả': 'A', 'Ã': 'A', 'Ạ': 'A',
+      'Ă': 'A', 'Ắ': 'A', 'Ằ': 'A', 'Ẳ': 'A', 'Ẵ': 'A', 'Ặ': 'A',
+      'Â': 'A', 'Ấ': 'A', 'Ầ': 'A', 'Ẩ': 'A', 'Ẫ': 'A', 'Ậ': 'A',
+      'Đ': 'D',
+      'É': 'E', 'È': 'E', 'Ẻ': 'E', 'Ẽ': 'E', 'Ẹ': 'E',
+      'Ê': 'E', 'Ế': 'E', 'Ề': 'E', 'Ể': 'E', 'Ễ': 'E', 'Ệ': 'E',
+      'Í': 'I', 'Ì': 'I', 'Ỉ': 'I', 'Ĩ': 'I', 'Ị': 'I',
+      'Ó': 'O', 'Ò': 'O', 'Ỏ': 'O', 'Õ': 'O', 'Ọ': 'O',
+      'Ô': 'O', 'Ố': 'O', 'Ồ': 'O', 'Ổ': 'O', 'Ỗ': 'O', 'Ộ': 'O',
+      'Ơ': 'O', 'Ớ': 'O', 'Ờ': 'O', 'Ở': 'O', 'Ỡ': 'O', 'Ợ': 'O',
+      'Ú': 'U', 'Ù': 'U', 'Ủ': 'U', 'Ũ': 'U', 'Ụ': 'U',
+      'Ư': 'U', 'Ứ': 'U', 'Ừ': 'U', 'Ử': 'U', 'Ữ': 'U', 'Ự': 'U',
+      'Ý': 'Y', 'Ỳ': 'Y', 'Ỷ': 'Y', 'Ỹ': 'Y', 'Ỵ': 'Y',
+    };
+
+    String normalized = text.trim();
+    replacements.forEach((k, v) {
+      normalized = normalized.replaceAll(k, v);
+    });
+    normalized = normalized.toLowerCase();
+    normalized = normalized.replaceAll(RegExp(r'[^a-z0-9]+'), '_');
+    normalized = normalized.replaceAll(RegExp(r'_+'), '_');
+    normalized = normalized.replaceAll(RegExp(r'^_+|_+$'), '');
+    return normalized;
+  }
+
   // Lấy household_id từ SharedPreferences
   Future<String?> _getHouseholdId() async {
     final prefs = await SharedPreferences.getInstance();
@@ -34,7 +76,13 @@ class IngredientService {
         throw Exception('Chưa có mã gia đình. Vui lòng đăng nhập lại.');
       }
 
-      await _collection.add({
+      // Tạo trước docId để lưu kèm trong dữ liệu (dễ tham chiếu ở tính năng khác)
+      final docRef = _collection.doc();
+      final ingredientSlug = _slugify(ingredient.name);
+
+      await docRef.set({
+        'ingredient_id': docRef.id,
+        'ingredient_slug': ingredientSlug, // id thân thiện, dễ dùng cho AI
         'ingredient_name': ingredient.name,
         'quantity': ingredient.quantity,
         'unit': ingredient.unit,
@@ -68,6 +116,7 @@ class IngredientService {
 
       await _collection.doc(id).update({
         'ingredient_name': ingredient.name,
+        'ingredient_slug': _slugify(ingredient.name),
         'quantity': ingredient.quantity,
         'unit': ingredient.unit,
         'expiration_date': Timestamp.fromDate(ingredient.expirationDate),
