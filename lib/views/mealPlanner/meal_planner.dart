@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:kitchen_assistant/models/meal_plan_model.dart';
-import 'package:kitchen_assistant/models/recipe_model.dart';
+import 'package:kitchen_assistant/models/Recipe.dart';
 import 'package:kitchen_assistant/services/meal_plan_service.dart';
-import 'package:kitchen_assistant/services/recipe_service.dart';
+import 'package:kitchen_assistant/services/ai_recipe_service.dart';
 import 'package:kitchen_assistant/viewmodels/meal_planner_viewmodel.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class PlanPage extends StatefulWidget {
   const PlanPage({super.key});
@@ -15,21 +17,54 @@ class PlanPage extends StatefulWidget {
 class _PlanPageState extends State<PlanPage> {
   late MealPlannerViewModel _viewModel;
   late DateTime _currentWeekStart;
-  final String _householdId = "fcLWhhpMpZZVOMydR1mF";
+  String? _householdId;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _viewModel = MealPlannerViewModel(MealPlanService(), RecipeService());
+    _viewModel = MealPlannerViewModel(MealPlanService(), SmartRecipeProvider());
     _currentWeekStart = _getWeekStart(DateTime.now());
+    _loadHouseholdId();
+  }
+
+  // Lấy householdId từ SharedPreferences
+  Future<void> _loadHouseholdId() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final householdCode = prefs.getString('household_code');
+      
+      if (householdCode != null) {
+        // Tìm household document theo code
+        final snapshot = await FirebaseFirestore.instance
+            .collection('households')
+            .where('household_code', isEqualTo: householdCode)
+            .limit(1)
+            .get();
+        
+        if (snapshot.docs.isNotEmpty) {
+          setState(() {
+            _householdId = snapshot.docs.first.id;
+            _isLoading = false;
+          });
+        } else {
+          _showSnackBar('Không tìm thấy hộ gia đình!', Colors.red);
+          setState(() => _isLoading = false);
+        }
+      } else {
+        _showSnackBar('Chưa đăng nhập hộ gia đình!', Colors.orange);
+        setState(() => _isLoading = false);
+      }
+    } catch (e) {
+      print('Lỗi load householdId: $e');
+      _showSnackBar('Lỗi tải thông tin hộ gia đình!', Colors.red);
+      setState(() => _isLoading = false);
+    }
   }
 
   DateTime _getWeekStart(DateTime date) {
-    return DateTime(
-      date.year,
-      date.month,
-      date.day,
-    ).subtract(Duration(days: date.weekday - 1));
+    return DateTime(date.year, date.month, date.day)
+        .subtract(Duration(days: date.weekday - 1));
   }
 
   void _previousWeek() {
@@ -46,9 +81,9 @@ class _PlanPageState extends State<PlanPage> {
 
   void _showSnackBar(String message, Color color) {
     if (mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message), backgroundColor: color));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), backgroundColor: color),
+      );
     }
   }
 
@@ -59,6 +94,11 @@ class _PlanPageState extends State<PlanPage> {
     required String recipeName,
     required List<MealPlan> existingMealPlans,
   }) async {
+    if (_householdId == null) {
+      _showSnackBar('Chưa có thông tin hộ gia đình!', Colors.red);
+      return;
+    }
+
     final existingInFirestore = existingMealPlans.any(
       (meal) =>
           meal.date.year == date.year &&
@@ -78,12 +118,9 @@ class _PlanPageState extends State<PlanPage> {
         date: date,
         mealTime: mealTime,
         recipeId: recipeId,
-        householdId: _householdId,
+        householdId: _householdId!,
       );
-      _showSnackBar(
-        'Đã thêm "$recipeName" thành công!',
-        const Color(0xFF7BF1A8),
-      );
+      _showSnackBar('Đã thêm "$recipeName" thành công!', const Color(0xFF7BF1A8));
     } catch (e) {
       _showSnackBar('Có lỗi khi lưu món ăn!', Colors.red);
     }
@@ -100,16 +137,42 @@ class _PlanPageState extends State<PlanPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_householdId == null) {
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.home_outlined, size: 64, color: Colors.grey),
+              const SizedBox(height: 16),
+              const Text(
+                'Chưa có thông tin hộ gia đình',
+                style: TextStyle(fontSize: 18, color: Colors.grey),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () => Navigator.pushReplacementNamed(context, '/'),
+                child: const Text('Đăng nhập'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       body: SingleChildScrollView(
         child: Column(
           children: [
             _buildHeader(),
             StreamBuilder<List<MealPlan>>(
-              stream: _viewModel.getWeeklyPlans(
-                _householdId,
-                _currentWeekStart,
-              ),
+              stream: _viewModel.getWeeklyPlans(_householdId!, _currentWeekStart),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Padding(
@@ -138,7 +201,7 @@ class _PlanPageState extends State<PlanPage> {
         ),
       ),
       floatingActionButton: StreamBuilder<List<MealPlan>>(
-        stream: _viewModel.getWeeklyPlans(_householdId, _currentWeekStart),
+        stream: _viewModel.getWeeklyPlans(_householdId!, _currentWeekStart),
         builder: (context, snapshot) {
           return FloatingActionButton(
             onPressed: () => _showDishSelectionForm(
@@ -192,7 +255,7 @@ class _PlanPageState extends State<PlanPage> {
             },
             onDragStarted: () => Navigator.pop(bottomSheetContext),
             viewModel: _viewModel,
-            householdId: _householdId,
+            householdId: _householdId!,
             existingMealPlans: existingMealPlans,
             targetDate: targetDate,
             targetMealTime: targetMealTime,
@@ -246,7 +309,7 @@ class _PlanPageState extends State<PlanPage> {
           ),
           const SizedBox(height: 16),
           StreamBuilder<List<MealPlan>>(
-            stream: _viewModel.getWeeklyPlans(_householdId, _currentWeekStart),
+            stream: _viewModel.getWeeklyPlans(_householdId!, _currentWeekStart),
             builder: (context, snapshot) {
               final mealPlans = snapshot.data ?? [];
               final uniqueMeals = <String>{};
@@ -261,7 +324,6 @@ class _PlanPageState extends State<PlanPage> {
               );
             },
           ),
-
           const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -280,10 +342,7 @@ class _PlanPageState extends State<PlanPage> {
               const SizedBox(width: 8),
               Text(
                 '${_currentWeekStart.day} Thg ${_currentWeekStart.month} – ${weekEnd.day} Thg ${weekEnd.month}',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
               ),
               IconButton(
                 onPressed: _nextWeek,
@@ -297,15 +356,7 @@ class _PlanPageState extends State<PlanPage> {
   }
 
   Widget _buildWeeklyPlan(List<MealPlan> mealPlans) {
-    const weekdays = [
-      'Thứ 2',
-      'Thứ 3',
-      'Thứ 4',
-      'Thứ 5',
-      'Thứ 6',
-      'Thứ 7',
-      'Chủ nhật',
-    ];
+    const weekdays = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
 
     return Column(
       children: List.generate(7, (index) {
@@ -315,18 +366,12 @@ class _PlanPageState extends State<PlanPage> {
     );
   }
 
-  Widget _buildDayCard(
-    String dayName,
-    DateTime date,
-    List<MealPlan> mealPlans,
-  ) {
+  Widget _buildDayCard(String dayName, DateTime date, List<MealPlan> mealPlans) {
     final dayMeals = mealPlans
-        .where(
-          (meal) =>
-              meal.date.year == date.year &&
-              meal.date.month == date.month &&
-              meal.date.day == date.day,
-        )
+        .where((meal) =>
+            meal.date.year == date.year &&
+            meal.date.month == date.month &&
+            meal.date.day == date.day)
         .toList();
 
     return Container(
@@ -337,7 +382,7 @@ class _PlanPageState extends State<PlanPage> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
+            color: Colors.black.withOpacity(0.1),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -368,32 +413,19 @@ class _PlanPageState extends State<PlanPage> {
                   child: Center(
                     child: Text(
                       '${date.day}',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                      ),
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
                     ),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Text(
                   dayName,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
                 ),
               ],
             ),
           ),
-          _buildMealSection(
-            '☀️',
-            'Sáng',
-            date,
-            dayMeals,
-            'breakfast',
-            mealPlans,
-          ),
+          _buildMealSection('☀️', 'Sáng', date, dayMeals, 'breakfast', mealPlans),
           _buildMealSection('🌤', 'Trưa', date, dayMeals, 'lunch', mealPlans),
           _buildMealSection('🌙', 'Tối', date, dayMeals, 'dinner', mealPlans),
         ],
@@ -438,11 +470,11 @@ class _PlanPageState extends State<PlanPage> {
                   border: Border.all(color: const Color(0xFF7BF1A8), width: 2),
                 )
               : rejectedData.isNotEmpty
-              ? BoxDecoration(
-                  color: Colors.red.withValues(alpha: 0.1),
-                  border: Border.all(color: Colors.red, width: 2),
-                )
-              : null,
+                  ? BoxDecoration(
+                      color: Colors.red.withOpacity(0.1),
+                      border: Border.all(color: Colors.red, width: 2),
+                    )
+                  : null,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -452,26 +484,16 @@ class _PlanPageState extends State<PlanPage> {
                   const SizedBox(width: 8),
                   Text(
                     mealTime,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF495565),
-                    ),
+                    style: const TextStyle(fontSize: 14, color: Color(0xFF495565)),
                   ),
                 ],
               ),
               const SizedBox(height: 8),
               if (mealPlansForTime.isNotEmpty) ...[
-                ...mealPlansForTime.map(
-                  (meal) => _buildMealItem(meal.recipeId, meal.id),
-                ),
+                ...mealPlansForTime.map((meal) => _buildMealItem(meal.recipeId, meal.id)),
                 _buildMealButton(date, mealTimeKey, allMealPlans, 'Thêm món'),
               ] else
-                _buildMealButton(
-                  date,
-                  mealTimeKey,
-                  allMealPlans,
-                  'Chưa có món',
-                ),
+                _buildMealButton(date, mealTimeKey, allMealPlans, 'Chưa có món'),
             ],
           ),
         );
@@ -493,7 +515,7 @@ class _PlanPageState extends State<PlanPage> {
         }
 
         return FutureBuilder<int>(
-          future: _viewModel.getMissingIngredientsCount(recipeId, _householdId),
+          future: _viewModel.getMissingIngredientsCount(recipeId, _householdId!),
           builder: (context, missingSnapshot) {
             final missingCount = missingSnapshot.data ?? 0;
             final hasWarning = missingCount > 0;
@@ -505,9 +527,7 @@ class _PlanPageState extends State<PlanPage> {
               decoration: BoxDecoration(
                 color: hasWarning ? Colors.white : const Color(0x4CA7D4B9),
                 borderRadius: BorderRadius.circular(10),
-                border: hasWarning
-                    ? Border.all(color: const Color(0xFFE5E7EB))
-                    : null,
+                border: hasWarning ? Border.all(color: const Color(0xFFE5E7EB)) : null,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -518,19 +538,12 @@ class _PlanPageState extends State<PlanPage> {
                       Expanded(
                         child: Text(
                           recipe.recipeName,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            color: Color(0xFF1D2838),
-                          ),
+                          style: const TextStyle(fontSize: 16, color: Color(0xFF1D2838)),
                         ),
                       ),
                       GestureDetector(
                         onTap: () => _deleteMealFromFirestore(mealPlanId),
-                        child: const Icon(
-                          Icons.close,
-                          size: 18,
-                          color: Color(0xFF1D2838),
-                        ),
+                        child: const Icon(Icons.close, size: 18, color: Color(0xFF1D2838)),
                       ),
                     ],
                   ),
@@ -538,18 +551,11 @@ class _PlanPageState extends State<PlanPage> {
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        const Icon(
-                          Icons.warning_amber_rounded,
-                          size: 14,
-                          color: Color(0xFFFFB84D),
-                        ),
+                        const Icon(Icons.warning_amber_rounded, size: 14, color: Color(0xFFFFB84D)),
                         const SizedBox(width: 4),
                         Text(
                           'Thiếu $missingCount nguyên liệu',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Color(0xFFFFB84D),
-                          ),
+                          style: const TextStyle(fontSize: 12, color: Color(0xFFFFB84D)),
                         ),
                       ],
                     ),
@@ -574,11 +580,7 @@ class _PlanPageState extends State<PlanPage> {
       ),
       child: const Row(
         children: [
-          SizedBox(
-            width: 16,
-            height: 16,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
+          SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
           SizedBox(width: 8),
           Text('Đang tải...'),
         ],
@@ -592,7 +594,7 @@ class _PlanPageState extends State<PlanPage> {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.red.withValues(alpha: 0.1),
+        color: Colors.red.withOpacity(0.1),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
@@ -608,12 +610,7 @@ class _PlanPageState extends State<PlanPage> {
     );
   }
 
-  Widget _buildMealButton(
-    DateTime date,
-    String mealTimeKey,
-    List<MealPlan> allMealPlans,
-    String text,
-  ) {
+  Widget _buildMealButton(DateTime date, String mealTimeKey, List<MealPlan> allMealPlans, String text) {
     return Container(
       width: double.infinity,
       height: 40,
@@ -635,16 +632,15 @@ class _PlanPageState extends State<PlanPage> {
               const Icon(Icons.add, size: 16, color: Color(0xFF99A1AE)),
               const SizedBox(width: 8),
             ],
-            Text(
-              text,
-              style: const TextStyle(color: Color(0xFF99A1AE), fontSize: 14),
-            ),
+            Text(text, style: const TextStyle(color: Color(0xFF99A1AE), fontSize: 14)),
           ],
         ),
       ),
     );
   }
 }
+
+// ============ DISH SELECTION FORM ============
 
 class DishSelectionForm extends StatefulWidget {
   final ScrollController scrollController;
@@ -683,8 +679,7 @@ class _DishSelectionFormState extends State<DishSelectionForm> {
   }
 
   bool _isRecipeAlreadyAdded(String recipeId) {
-    if (widget.targetDate == null || widget.targetMealTime == null)
-      return false;
+    if (widget.targetDate == null || widget.targetMealTime == null) return false;
 
     return widget.existingMealPlans.any(
       (meal) =>
@@ -737,10 +732,7 @@ class _DishSelectionFormState extends State<DishSelectionForm> {
                   widget.targetDate != null
                       ? 'Nhấn vào món ăn để thêm ngay'
                       : 'Kéo thả món ăn vào lịch',
-                  style: const TextStyle(
-                    color: Color(0xFF697282),
-                    fontSize: 15,
-                  ),
+                  style: const TextStyle(color: Color(0xFF697282), fontSize: 15),
                 ),
                 const SizedBox(height: 16),
                 _buildRecipeList(),
@@ -797,8 +789,7 @@ class _DishSelectionFormState extends State<DishSelectionForm> {
           Expanded(
             child: TextField(
               controller: _searchController,
-              onChanged: (value) =>
-                  setState(() => _searchText = value.toLowerCase()),
+              onChanged: (value) => setState(() => _searchText = value.toLowerCase()),
               decoration: const InputDecoration(
                 hintText: 'Tìm món ăn...',
                 hintStyle: TextStyle(color: Color(0xFF697282), fontSize: 15),
@@ -815,7 +806,7 @@ class _DishSelectionFormState extends State<DishSelectionForm> {
 
   Widget _buildRecipeList() {
     return StreamBuilder<List<Recipe>>(
-      stream: widget.viewModel.getRecipesByHousehold(widget.householdId),
+      stream: widget.viewModel.getAllRecipes(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(
@@ -832,10 +823,7 @@ class _DishSelectionFormState extends State<DishSelectionForm> {
               children: [
                 const Icon(Icons.error, color: Colors.red, size: 48),
                 const SizedBox(height: 16),
-                Text(
-                  'Lỗi: ${snapshot.error}',
-                  style: const TextStyle(color: Colors.red),
-                ),
+                Text('Lỗi: ${snapshot.error}', style: const TextStyle(color: Colors.red)),
               ],
             ),
           );
@@ -862,48 +850,41 @@ class _DishSelectionFormState extends State<DishSelectionForm> {
         }
 
         final filteredRecipes = recipes
-            .where(
-              (recipe) =>
-                  _searchText.isEmpty ||
-                  recipe.recipeName.toLowerCase().contains(_searchText),
-            )
+            .where((recipe) =>
+                _searchText.isEmpty ||
+                recipe.recipeName.toLowerCase().contains(_searchText))
             .toList();
 
-        if (filteredRecipes.isEmpty) {
-          return const Center(
-            child: Padding(
-              padding: EdgeInsets.all(32.0),
-              child: Column(
-                children: [
-                  Icon(Icons.search_off, color: Colors.grey, size: 48),
-                  SizedBox(height: 16),
-                  Text(
-                    'Không tìm thấy món ăn',
-                    style: TextStyle(color: Color(0xFF697282), fontSize: 16),
-                  ),
-                ],
-              ),
-            ),
-          );
-        }
+        // if (filteredRecipes.isEmpty) {
+        //   return const Center(
+        //     child: Padding(
+        //       padding: EdgeInsets.all(32.0),
+        //       child: Column(
+        //         children: [
+        //           Icon(Icons.search_off, color: Colors.grey, size: 48),
+        //           SizedBox(height: 16),
+        //           Text(
+        //             'Không tìm thấy món ăn',
+        //             style: TextStyle(color: Color(0xFF697282), fontSize: 16),
+        //           ),
+        //         ],
+        //       ),
+        //     ),
+        //   );
+        // }
 
         return Column(
-          children: filteredRecipes
-              .map((recipe) => _buildDishItem(recipe))
-              .toList(),
+          children: filteredRecipes.map((recipe) => _buildDishItem(recipe)).toList(),
         );
       },
     );
   }
 
   Widget _buildDishItem(Recipe recipe) {
-    final isAlreadyAdded = _isRecipeAlreadyAdded(recipe.id);
+    final isAlreadyAdded = _isRecipeAlreadyAdded(recipe.recipeId);
 
     return FutureBuilder<int>(
-      future: widget.viewModel.getMissingIngredientsCount(
-        recipe.id,
-        widget.householdId,
-      ),
+      future: widget.viewModel.getMissingIngredientsCount(recipe.recipeId, widget.householdId),
       builder: (context, missingSnapshot) {
         final missingCount = missingSnapshot.data ?? 0;
         final hasEnoughIngredients = missingCount == 0;
@@ -916,26 +897,18 @@ class _DishSelectionFormState extends State<DishSelectionForm> {
               opacity: 0.6,
               child: Stack(
                 children: [
-                  _buildDishContainer(
-                    recipe,
-                    hasEnoughIngredients,
-                    missingCount,
-                  ),
+                  _buildDishContainer(recipe, hasEnoughIngredients, missingCount),
                   Positioned.fill(
                     child: Container(
                       decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.35),
+                        color: Colors.black.withOpacity(0.35),
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: const Center(
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(
-                              Icons.check_circle,
-                              color: Colors.white,
-                              size: 22,
-                            ),
+                            Icon(Icons.check_circle, color: Colors.white, size: 22),
                             SizedBox(width: 6),
                             Text(
                               'Đã thêm',
@@ -957,7 +930,7 @@ class _DishSelectionFormState extends State<DishSelectionForm> {
         }
 
         return Draggable<Map<String, String>>(
-          data: {'recipeId': recipe.id, 'recipeName': recipe.recipeName},
+          data: {'recipeId': recipe.recipeId, 'recipeName': recipe.recipeName},
           onDragStarted: widget.onDragStarted,
           feedback: Material(
             elevation: 4,
@@ -966,19 +939,11 @@ class _DishSelectionFormState extends State<DishSelectionForm> {
           ),
           childWhenDragging: Opacity(
             opacity: 0.3,
-            child: _buildDishContainer(
-              recipe,
-              hasEnoughIngredients,
-              missingCount,
-            ),
+            child: _buildDishContainer(recipe, hasEnoughIngredients, missingCount),
           ),
           child: GestureDetector(
-            onTap: () => widget.onDishSelected(recipe.id, recipe.recipeName),
-            child: _buildDishContainer(
-              recipe,
-              hasEnoughIngredients,
-              missingCount,
-            ),
+            onTap: () => widget.onDishSelected(recipe.recipeId, recipe.recipeName),
+            child: _buildDishContainer(recipe, hasEnoughIngredients, missingCount),
           ),
         );
       },
@@ -990,13 +955,9 @@ class _DishSelectionFormState extends State<DishSelectionForm> {
       width: 280,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: hasEnoughIngredients
-            ? const Color(0xFFF0FDF4)
-            : const Color(0xFFFEF9C2),
+        color: hasEnoughIngredients ? const Color(0xFFF0FDF4) : const Color(0xFFFEF9C2),
         border: Border.all(
-          color: hasEnoughIngredients
-              ? const Color(0xFFB8F7CF)
-              : const Color(0xFFFFDF20),
+          color: hasEnoughIngredients ? const Color(0xFFB8F7CF) : const Color(0xFFFFDF20),
           width: 2,
         ),
         borderRadius: BorderRadius.circular(14),
@@ -1022,23 +983,15 @@ class _DishSelectionFormState extends State<DishSelectionForm> {
     );
   }
 
-  Widget _buildDishContainer(
-    Recipe recipe,
-    bool hasEnoughIngredients,
-    int missingCount,
-  ) {
+  Widget _buildDishContainer(Recipe recipe, bool hasEnoughIngredients, int missingCount) {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: hasEnoughIngredients
-            ? const Color(0xFFF0FDF4)
-            : const Color(0xFFFEF9C2),
+        color: hasEnoughIngredients ? const Color(0xFFF0FDF4) : const Color(0xFFFEF9C2),
         border: Border.all(
-          color: hasEnoughIngredients
-              ? const Color(0xFFB8F7CF)
-              : const Color(0xFFFFDF20),
+          color: hasEnoughIngredients ? const Color(0xFFB8F7CF) : const Color(0xFFFFDF20),
           width: 2,
         ),
         borderRadius: BorderRadius.circular(14),
@@ -1063,24 +1016,16 @@ class _DishSelectionFormState extends State<DishSelectionForm> {
                 Row(
                   children: [
                     Icon(
-                      hasEnoughIngredients
-                          ? Icons.check_circle
-                          : Icons.warning_amber_rounded,
+                      hasEnoughIngredients ? Icons.check_circle : Icons.warning_amber_rounded,
                       size: 16,
-                      color: hasEnoughIngredients
-                          ? const Color(0xFFA8D5BA)
-                          : const Color(0xFFA65F00),
+                      color: hasEnoughIngredients ? const Color(0xFFA8D5BA) : const Color(0xFFA65F00),
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      hasEnoughIngredients
-                          ? 'Đủ nguyên liệu'
-                          : 'Thiếu $missingCount nguyên liệu',
+                      hasEnoughIngredients ? 'Đủ nguyên liệu' : 'Thiếu $missingCount nguyên liệu',
                       style: TextStyle(
                         fontSize: 14,
-                        color: hasEnoughIngredients
-                            ? const Color(0xFFA8D5BA)
-                            : const Color(0xFFA65F00),
+                        color: hasEnoughIngredients ? const Color(0xFFA8D5BA) : const Color(0xFFA65F00),
                       ),
                     ),
                   ],
@@ -1102,11 +1047,11 @@ class _DishSelectionFormState extends State<DishSelectionForm> {
         borderRadius: BorderRadius.circular(size == 40 ? 8 : 16),
         color: Colors.grey[200],
       ),
-      child: recipe.recipeImage.isNotEmpty
+      child: recipe.recipeImage != null && recipe.recipeImage!.isNotEmpty
           ? ClipRRect(
               borderRadius: BorderRadius.circular(size == 40 ? 8 : 16),
               child: Image.network(
-                recipe.recipeImage,
+                recipe.recipeImage!,
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) =>
                     Icon(Icons.restaurant, size: size == 40 ? 20 : 30),
