@@ -50,9 +50,8 @@ class MyApp extends StatelessWidget {
               primarySwatch: Colors.blue,
             ),
             home: const FirstScreen(),
-            initialRoute: '/',
+            initialRoute: '',
             routes: {
-              '/': (context) => const FirstScreen(),
               '/home': (context) => const Dashboard(),
               '/home/recipes': (context) => const Recipes(),
             },
