@@ -22,11 +22,135 @@ class _RecipeDetailState extends State<RecipeDetail> {
   bool _isCooking = false;
   Recipe? _recipe;
   bool _isLoading = true;
+  Map<String, bool> _ingredientAvailability = {}; // Map để lưu trạng thái nguyên liệu (có đủ/thiếu)
 
   @override
   void initState() {
     super.initState();
     _loadRecipe();
+  }
+  
+  // Kiểm tra nguyên liệu có trong kho hay không
+  Future<void> _checkIngredientsAvailability() async {
+    if (_recipe == null) return;
+    
+    try {
+      final viewModel = Provider.of<PantryViewModel>(context, listen: false);
+      
+      // Đảm bảo ingredients đã được load
+      if (viewModel.ingredients.isEmpty) {
+        await viewModel.loadIngredients();
+      }
+      
+      // Tạo map từ nguyên liệu trong kho (theo slug và id)
+      final Map<String, double> pantryMapBySlug = {};
+      final Map<String, double> pantryMapById = {};
+      final Map<String, String> pantryUnitMap = {};
+      
+      for (var pantryIngredient in viewModel.ingredients) {
+        if (pantryIngredient.slug.isNotEmpty) {
+          final normalizedSlug = pantryIngredient.slug.toLowerCase();
+          pantryMapBySlug[normalizedSlug] = pantryIngredient.quantity;
+          pantryUnitMap[normalizedSlug] = pantryIngredient.unit;
+        }
+        if (pantryIngredient.id.isNotEmpty) {
+          pantryMapById[pantryIngredient.id] = pantryIngredient.quantity;
+          pantryUnitMap[pantryIngredient.id] = pantryIngredient.unit;
+        }
+      }
+      
+      // So sánh từng nguyên liệu của công thức với kho
+      final Map<String, bool> availability = {};
+      
+      for (var required in _recipe!.ingredientsRequirements) {
+        bool isAvailable = false;
+        
+        // Ưu tiên tìm theo ID trước
+        if (required.id.isNotEmpty && pantryMapById.containsKey(required.id)) {
+          final availableAmount = pantryMapById[required.id]!;
+          final pantryUnit = pantryUnitMap[required.id] ?? '';
+          final requiredAmount = required.amount;
+          
+          // Chuyển đổi đơn vị nếu cần và so sánh
+          final convertedAmount = _convertUnit(availableAmount, pantryUnit, required.unit);
+          isAvailable = convertedAmount >= requiredAmount;
+        } else if (required.id.isNotEmpty) {
+          // Nếu không tìm thấy theo ID, tìm theo slug (normalized)
+          final normalizedId = required.id.toLowerCase();
+          if (pantryMapBySlug.containsKey(normalizedId)) {
+            final availableAmount = pantryMapBySlug[normalizedId]!;
+            final pantryUnit = pantryUnitMap[normalizedId] ?? '';
+            final requiredAmount = required.amount;
+            
+            // Chuyển đổi đơn vị nếu cần và so sánh
+            final convertedAmount = _convertUnit(availableAmount, pantryUnit, required.unit);
+            isAvailable = convertedAmount >= requiredAmount;
+          }
+        }
+        // Nếu không tìm thấy → isAvailable = false (thiếu)
+        
+        availability[required.id] = isAvailable;
+      }
+      
+      if (mounted) {
+        setState(() {
+          _ingredientAvailability = availability;
+        });
+      }
+    } catch (e) {
+      print("Lỗi khi kiểm tra nguyên liệu: $e");
+    }
+  }
+  
+  /// Chuyển đổi đơn vị để so sánh số lượng
+  double _convertUnit(double amount, String fromUnit, String toUnit) {
+    if (fromUnit.isEmpty || toUnit.isEmpty) return amount;
+    if (fromUnit.toLowerCase() == toUnit.toLowerCase()) {
+      return amount;
+    }
+
+    final fromLower = fromUnit.toLowerCase();
+    final toLower = toUnit.toLowerCase();
+
+    // Nhóm đơn vị khối lượng
+    if (['kg', 'kilogram', 'kilograms'].contains(fromLower)) {
+      if (['g', 'gram', 'grams'].contains(toLower)) {
+        return amount * 1000;
+      }
+    }
+    if (['g', 'gram', 'grams'].contains(fromLower)) {
+      if (['kg', 'kilogram', 'kilograms'].contains(toLower)) {
+        return amount / 1000;
+      }
+    }
+
+    // Nhóm đơn vị thể tích
+    if (['l', 'liter', 'liters', 'litre', 'litres'].contains(fromLower)) {
+      if (['ml', 'milliliter', 'milliliters', 'millilitre', 'millilitres'].contains(toLower)) {
+        return amount * 1000;
+      }
+    }
+    if (['ml', 'milliliter', 'milliliters', 'millilitre', 'millilitres'].contains(fromLower)) {
+      if (['l', 'liter', 'liters', 'litre', 'litres'].contains(toLower)) {
+        return amount / 1000;
+      }
+    }
+
+    // Các đơn vị tương đương - không cần chuyển đổi
+    final equivalentUnits = [
+      ['cái', 'quả', 'trái', 'củ', 'nhánh', 'lá', 'bông', 'cây', 'qua', 'cu', 'tep'],
+      ['muỗng', 'thìa', 'spoon', 'tablespoon', 'teaspoon'],
+      ['chén', 'bát', 'bowl', 'cup'],
+    ];
+
+    for (var group in equivalentUnits) {
+      if (group.contains(fromLower) && group.contains(toLower)) {
+        return amount;
+      }
+    }
+
+    // Nếu không thể chuyển đổi, trả về số lượng gốc
+    return amount;
   }
 
   Future<void> _loadRecipe() async {
@@ -43,6 +167,9 @@ class _RecipeDetailState extends State<RecipeDetail> {
           _recipe = Recipe.fromFirestore(snapshot.docs.first);
           _isLoading = false;
         });
+        
+        // Kiểm tra nguyên liệu sau khi load recipe
+        _checkIngredientsAvailability();
         
         // Khởi tạo video nếu có
         if (_recipe?.videoUrl != null && _recipe!.videoUrl!.isNotEmpty) {
@@ -73,6 +200,9 @@ class _RecipeDetailState extends State<RecipeDetail> {
             _recipe = Recipe.fromFirestore(doc);
             _isLoading = false;
           });
+          
+          // Kiểm tra nguyên liệu sau khi load recipe
+          _checkIngredientsAvailability();
           
           if (_recipe?.videoUrl != null && _recipe!.videoUrl!.isNotEmpty) {
             _videoController = VideoPlayerController.networkUrl(Uri.parse(_recipe!.videoUrl!))
@@ -575,10 +705,13 @@ Widget _buildSingleTabBtn({
     return Column(
       spacing: 10,
       children: _recipe!.ingredientsRequirements.map((ingredient) {
+        // Kiểm tra xem nguyên liệu có đủ trong kho hay không
+        final isAvailable = _ingredientAvailability[ingredient.id] ?? false;
+        
         return _buildIngredientItem(
           ingredient.name,
           '${ingredient.amount} ${ingredient.unit}',
-          true, // Có thể thêm logic kiểm tra trong kho sau
+          isAvailable, // true nếu có đủ trong kho, false nếu thiếu hoặc không có
         );
       }).toList(),
     );
@@ -588,17 +721,37 @@ Widget _buildSingleTabBtn({
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
+        // Nếu có đủ: nền xanh, nếu thiếu/không có: nền xám
         color: isChecked ? const Color(0xFFF0FDF4) : const Color(0xFFF9FAFB),
-        border: Border.all(color: isChecked ? const Color(0xFFB8F7CF) : const Color(0xFFE5E7EB)),
+        border: Border.all(
+          color: isChecked ? const Color(0xFFB8F7CF) : const Color(0xFFE5E7EB),
+        ),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
         children: [
-          Icon(isChecked ? Icons.check_circle : Icons.cancel, color: isChecked ? const Color(0xFF00C850) : Colors.grey),
+          // Dấu tích xanh nếu có đủ, dấu x xám nếu thiếu/không có
+          Icon(
+            isChecked ? Icons.check_circle : Icons.cancel,
+            color: isChecked ? const Color(0xFF00C850) : Colors.grey,
+          ),
           const SizedBox(width: 12),
-          Text(name, style: const TextStyle(fontSize: 16)),
+          // Tên nguyên liệu: màu xám nếu thiếu/không có
+          Text(
+            name,
+            style: TextStyle(
+              fontSize: 16,
+              color: isChecked ? Colors.black : Colors.grey,
+            ),
+          ),
           const Spacer(),
-          Text(amount, style: const TextStyle(color: Colors.grey)),
+          // Số lượng: màu xám nếu thiếu/không có
+          Text(
+            amount,
+            style: TextStyle(
+              color: isChecked ? Colors.grey : Colors.grey[400],
+            ),
+          ),
         ],
       ),
     );
