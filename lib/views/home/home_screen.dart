@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:kitchen_assistant/views/recipes/suggested_recipes.dart';
+// import 'package:kitchen_assistant/views/recipes/suggested_recipes.dart';
 import '../widgets/bottom_nav.dart';
 import '../notification/notification.dart';
 import '../shoppingList/shopping_list.dart';

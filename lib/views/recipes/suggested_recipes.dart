@@ -3,7 +3,7 @@ import 'package:kitchen_assistant/models/Recipe.dart'; // Import Model
 import 'package:kitchen_assistant/models/RecipeMatch.dart'; // Import RecipeMatch
 import 'package:kitchen_assistant/services/ai_recipe_service.dart'; // Import Service
 import 'package:kitchen_assistant/services/virtualPantry/ingredient_service.dart'; // Import IngredientService
-import 'recipe-card.dart'; // Widget Card cũ của bạn
+import 'recipe_card.dart'; 
 
 class Recipes extends StatefulWidget {
   const Recipes({super.key});
@@ -191,7 +191,7 @@ class _RecipesScreenState extends State<Recipes> {
                             title: recipe.recipeName,
                             // Xử lý ảnh (nếu null thì dùng ảnh mặc định)
                             image: (recipe.recipeImage == null || recipe.recipeImage!.isEmpty)
-                                ? "assets/images/recipes/default.png" 
+                                ? "assets/images/recipes/recipe1.png" 
                                 : recipe.recipeImage!,
                             time: '${recipe.prepTime} phút',
                             steps: '${recipe.steps.length} bước', // Đếm số bước
@@ -203,6 +203,8 @@ class _RecipesScreenState extends State<Recipes> {
                             matchPercent: match.matchPercentage.round(), // Hiển thị phần trăm match thực tế
                             sumIngredient: recipe.ingredientsRequirements.length,
                             fillIngredient: match.sufficientIngredients.length,
+                            recipeId: recipe.recipeId,
+                            onImageTap: () => Navigator.pushNamed(context, '/home/recipes/recipe-detail', arguments: recipe.recipeId),
                           );
                         },
                       ),
