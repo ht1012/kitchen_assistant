@@ -155,9 +155,9 @@ class _HeaderState extends State<_Header> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  householdName,
+                  'Xin chào gia đình $householdName',
                   style: const TextStyle(
-                    fontSize: 22,
+                    fontSize: 16,
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF075B33),
                   ),
@@ -211,49 +211,6 @@ class _HeaderState extends State<_Header> {
     );
   }
 }
-
-
-// class _IngredientStatus extends StatelessWidget {
-//   const _IngredientStatus();
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Column(
-//       crossAxisAlignment: CrossAxisAlignment.start,
-//       children: [
-//         const Text(
-//           'Tình trạng nguyên liệu',
-//           style: TextStyle(fontSize: 14, color: Color(0xFF697282)),
-//         ),
-//         const SizedBox(height: 12),
-//         Row(
-//           children: const [
-//             _StatusCard(
-//               count: '6',
-//               label: 'Tươi',
-//               bgColor: Colors.white,
-//               textColor: Color(0xFF00A63D),
-//             ),
-//             SizedBox(width: 12),
-//             _StatusCard(
-//               count: '2',
-//               label: 'Sắp hết hạn',
-//               bgColor: Color(0xFFFDFBE8),
-//               textColor: Color(0xFFD08700),
-//             ),
-//             SizedBox(width: 12),
-//             _StatusCard(
-//               count: '1',
-//               label: 'Hết hạn',
-//               bgColor: Color(0xFFFEF2F2),
-//               textColor: Color(0xFFE7000A),
-//             ),
-//           ],
-//         ),
-//       ],
-//     );
-//   }
-// }
 
 class _IngredientStatus extends StatelessWidget {
   const _IngredientStatus();

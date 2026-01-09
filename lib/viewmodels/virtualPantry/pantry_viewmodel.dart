@@ -28,11 +28,6 @@ class PantryViewModel extends ChangeNotifier {
     await loadIngredients();
   }
 
-  Future<void> deleteIngredient(String id) async {
-    await _service.deleteIngredient(id);
-    await loadIngredients();
-  }
-
   Future<void> useIngredient(String id, double amount) async {
     await _service.useIngredient(id, amount);
     await loadIngredients();

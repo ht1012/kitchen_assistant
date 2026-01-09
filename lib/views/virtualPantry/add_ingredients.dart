@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/virtualPantry/ingredient_model.dart';
 import '../../viewmodels/virtualPantry/pantry_viewmodel.dart';
+import '../../services/virtualPantry/barcode_service.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'qr_scanner_page.dart';
 
 
 class AddIngredientPage extends StatefulWidget {
@@ -35,7 +37,12 @@ class _AddIngredientPageState extends State<AddIngredientPage> {
     {'id': 'fruit', 'name': 'Trái cây'},
     {'id': 'vegetable', 'name': 'Rau củ'},
     {'id': 'meat', 'name': 'Thịt'},
-    {'id': 'drink', 'name': 'Đồ uống'},
+    {'id': 'seafood', 'name': 'Hải sản'},
+    {'id': 'dairy', 'name': 'Sữa & chế phẩm'},
+    {'id': 'grain', 'name': 'Gạo & ngũ cốc'},
+    {'id': 'spice', 'name': 'Gia vị & thảo mộc'},
+    {'id': 'sauce', 'name': 'Nước sốt & gia vị lỏng'},
+    {'id': 'oil', 'name': 'Dầu & mỡ'},
   ];
 
   final List<String> units = [
@@ -138,6 +145,191 @@ class _AddIngredientPageState extends State<AddIngredientPage> {
     }
   }
 
+  Future<void> _scanQRCode() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const QRScannerPage(),
+      ),
+    );
+    
+    if (result != null && result is Map<String, dynamic>) {
+      debugPrint('📦 Kết quả từ scanner: $result');
+      // Kiểm tra nếu là barcode (chỉ có số), tự động tra cứu
+      if (result.containsKey('barcode')) {
+        final barcode = result['barcode'] as String;
+        debugPrint('🔍 Phát hiện barcode: $barcode, bắt đầu tra cứu...');
+        await _lookupBarcode(barcode);
+      } else {
+        debugPrint('📝 Không phải barcode, xử lý như QR code thông thường');
+        _handleQRResult(result);
+      }
+    } else {
+      debugPrint('❌ Không có kết quả từ scanner');
+    }
+  }
+
+  Future<void> _lookupBarcode(String barcode) async {
+    // Hiển thị loading
+    if (!mounted) return;
+    
+    // Thông báo đã quét được mã vạch
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Đã quét được mã vạch: $barcode. Đang tra cứu thông tin...'),
+          backgroundColor: Colors.blue,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+
+    try {
+      debugPrint('Bắt đầu tra cứu barcode: $barcode');
+      final productData = await BarcodeService.lookupBarcode(barcode);
+      debugPrint('Kết quả tra cứu: $productData');
+      
+      if (productData != null) {
+        // Điền thông tin vào form
+        if (productData['name'] != null) {
+          nameController.text = productData['name'] as String;
+        }
+        
+        if (productData['quantity'] != null && (productData['quantity'] as String).isNotEmpty) {
+          quantityController.text = productData['quantity'] as String;
+        }
+        
+        if (productData['unit'] != null && units.contains(productData['unit'])) {
+          setState(() {
+            selectedUnit = productData['unit'] as String;
+          });
+        }
+        
+        if (productData['categoryId'] != null) {
+          setState(() {
+            selectedCategoryId = productData['categoryId'] as String;
+          });
+        }
+
+        if (mounted) {
+          Navigator.pop(context); // Đóng loading
+          
+          final productName = productData['name'] as String;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(productName != barcode 
+                  ? 'Đã tra cứu thông tin sản phẩm: $productName'
+                  : 'Đã tra cứu barcode nhưng thông tin hạn chế'),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      } else {
+        // Không tìm thấy sản phẩm trong database Open Food Facts
+        if (mounted) {
+          Navigator.pop(context); // Đóng loading
+          
+          // Chỉ điền mã vạch vào tên
+          nameController.text = barcode;
+          
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Đã quét được mã vạch: $barcode\nVui lòng nhập thông tin sản phẩm.'),
+                backgroundColor: Colors.blue,
+                duration: const Duration(seconds: 2),
+              ),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // Đóng loading
+        nameController.text = barcode;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi tra cứu: ${e.toString().length > 50 ? e.toString().substring(0, 50) + "..." : e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
+
+  void _handleQRResult(Map<String, dynamic> qrData) {
+    // Điền thông tin từ QR code vào form
+    if (qrData.containsKey('name')) {
+      nameController.text = (qrData['name'] ?? '').toString();
+    }
+    
+    if (qrData.containsKey('quantity')) {
+      quantityController.text = qrData['quantity'].toString();
+    }
+    
+    if (qrData.containsKey('unit')) {
+      final unit = (qrData['unit'] ?? '').toString();
+      if (units.contains(unit)) {
+        setState(() {
+          selectedUnit = unit;
+        });
+      }
+    }
+    
+    // Hỗ trợ categoryId hoặc categoryName
+    if (qrData.containsKey('categoryId')) {
+      final categoryId = (qrData['categoryId'] ?? '').toString();
+      if (categories.any((c) => c['id'] == categoryId)) {
+        setState(() {
+          selectedCategoryId = categoryId;
+        });
+      }
+    } else if (qrData.containsKey('categoryName')) {
+      final categoryName = (qrData['categoryName'] ?? '').toString().toLowerCase();
+      final matched = categories.firstWhere(
+        (c) => (c['name'] ?? '').toLowerCase() == categoryName,
+        orElse: () => {},
+      );
+      if (matched.isNotEmpty) {
+        setState(() {
+          selectedCategoryId = matched['id'];
+        });
+      }
+    }
+    
+    if (qrData.containsKey('expirationDate')) {
+      try {
+        final dateStr = (qrData['expirationDate'] ?? '').toString();
+        final date = DateTime.parse(dateStr);
+        setState(() {
+          selectedDate = date;
+          dateController.text = date.toString().split(' ')[0];
+        });
+      } catch (e) {
+        // Ignore date parsing errors
+      }
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Đã điền thông tin từ QR code'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -166,14 +358,23 @@ class _AddIngredientPageState extends State<AddIngredientPage> {
                       onPressed: () => Navigator.pop(context),
                     ),
                     Text(
-                      isEditMode ? 'Sửa nguyên liệu' : 'Thêm nguyên liệu',
+                      isEditMode ? 'Cập nhật hạn sử dụng' : 'Thêm nguyên liệu',
                       style: const TextStyle(
                         fontSize: 24,
                         color: Color(0xFF075B33),
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(width: 48),
+                    IconButton(
+                      icon: Icon(
+                        Icons.qr_code_scanner,
+                        color: isEditMode
+                            ? const Color(0xFF9CA3AF) // xám khi disable
+                            : const Color(0xFF075B33),
+                        size: 28,
+                      ),
+                      onPressed: isEditMode ? null : _scanQRCode,
+                    ),
                   ],
                 ),
               ),
@@ -201,14 +402,15 @@ class _AddIngredientPageState extends State<AddIngredientPage> {
                             ),
                           ),
 
-                          GestureDetector(
-                            onTap: _takePhoto, // 👈 BẤM LÀ MỞ CAMERA
-                            child: const CircleAvatar(
-                              radius: 20,
-                              backgroundColor: Color(0xFF00C850),
-                              child: Icon(Icons.add, color: Colors.white),
+                          if (!isEditMode)
+                            GestureDetector(
+                              onTap: _takePhoto,
+                              child: const CircleAvatar(
+                                radius: 20,
+                                backgroundColor: Color(0xFF00C850),
+                                child: Icon(Icons.add, color: Colors.white),
+                              ),
                             ),
-                          ),
                         ],
                       ),
                       const SizedBox(height: 24),
@@ -217,6 +419,7 @@ class _AddIngredientPageState extends State<AddIngredientPage> {
                         label: 'Tên nguyên liệu',
                         required: true,
                         controller: nameController,
+                        readOnly: isEditMode,
                       ),
                       const SizedBox(height: 12),
 
@@ -237,6 +440,7 @@ class _AddIngredientPageState extends State<AddIngredientPage> {
                             selectedCategoryId = value;
                           });
                         },
+                        enabled: !isEditMode,
                       ),
                       const SizedBox(height: 12),
 
@@ -247,6 +451,7 @@ class _AddIngredientPageState extends State<AddIngredientPage> {
                               label: 'Số lượng',
                               required: true,
                               controller: quantityController,
+                              readOnly: isEditMode,
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -267,6 +472,7 @@ class _AddIngredientPageState extends State<AddIngredientPage> {
                                   selectedUnit = value;
                                 });
                               },
+                              enabled: !isEditMode,
                             ),
                           ),
                         ],
@@ -308,7 +514,7 @@ class _AddIngredientPageState extends State<AddIngredientPage> {
                         ),
                         child: Text(
                           isEditMode
-                              ? 'Lưu thay đổi'
+                              ? 'Cập nhật'
                               : 'Thêm nguyên liệu',
                         ),
                       ),
@@ -330,9 +536,12 @@ class _AddIngredientPageState extends State<AddIngredientPage> {
         selectedCategoryId == null ||
         selectedUnit == null ||
         selectedDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng điền đầy đủ thông tin')),
-      );
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Vui lòng điền đầy đủ thông tin'),
+            backgroundColor: Colors.red,
+          ),
+        );
       return;
     }
 
@@ -437,6 +646,7 @@ class _AddIngredientPageState extends State<AddIngredientPage> {
       expirationDate: selectedDate!,
       imageUrl: imageUrl,
       householdId: isEditMode ? widget.ingredient!.householdId : '', // householdId sẽ được cập nhật trong service
+      slug: isEditMode ? widget.ingredient!.slug : '', // slug sẽ được tạo lại trong service
     );
 
     final viewModel =
@@ -496,6 +706,7 @@ class _AddIngredientPageState extends State<AddIngredientPage> {
     required TextEditingController controller,
     Widget? suffix,
     VoidCallback? onTap,
+    bool readOnly = false,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -510,7 +721,7 @@ class _AddIngredientPageState extends State<AddIngredientPage> {
             decoration: _boxDecoration(),
             child: TextField(
               controller: controller,
-              enabled: onTap == null,
+              enabled: onTap == null && !readOnly,
               decoration: InputDecoration(
                 border: InputBorder.none,
                 hintText: 'Nhập $label',
@@ -529,6 +740,7 @@ class _AddIngredientPageState extends State<AddIngredientPage> {
     required String? value,
     required List<DropdownMenuItem<String>> items,
     required ValueChanged<String?> onChanged,
+    bool enabled = true,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -546,7 +758,7 @@ class _AddIngredientPageState extends State<AddIngredientPage> {
               isExpanded: true,
               hint: Text('Chọn $label'),
               items: items,
-              onChanged: onChanged,
+              onChanged: enabled ? onChanged : null,
               icon: const Icon(Icons.keyboard_arrow_down),
             ),
           ),
