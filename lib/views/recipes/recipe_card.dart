@@ -66,7 +66,7 @@ class RecipeCard extends StatelessWidget {
                 onTap: onImageTap,
                 child: ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                  child: Image.network(image,height: 180, width: double.infinity, fit: BoxFit.cover),
+                  child: Image.asset(image,height: 180, width: double.infinity, fit: BoxFit.cover),
                 ),
               ),
               Positioned(
