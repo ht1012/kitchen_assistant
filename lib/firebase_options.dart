@@ -46,7 +46,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '222160994742',
     projectId: 'kitchenassistant-9befd',
     authDomain: 'kitchenassistant-9befd.firebaseapp.com',
-    storageBucket: 'kitchenassistant-9befd.firebasestorage.app',
+    storageBucket: 'kkitchenassistant-9befd.appspot.com',
     measurementId: 'G-YMQEXRJPBV',
   );
 
@@ -55,7 +55,7 @@ class DefaultFirebaseOptions {
     appId: '1:222160994742:android:8bb92350b66f8c8f3e8117',
     messagingSenderId: '222160994742',
     projectId: 'kitchenassistant-9befd',
-    storageBucket: 'kitchenassistant-9befd.firebasestorage.app',
+    storageBucket: 'kitchenassistant-9befd.appspot.com',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
@@ -63,7 +63,7 @@ class DefaultFirebaseOptions {
     appId: '1:222160994742:ios:39d1c9de37736a023e8117',
     messagingSenderId: '222160994742',
     projectId: 'kitchenassistant-9befd',
-    storageBucket: 'kitchenassistant-9befd.firebasestorage.app',
+    storageBucket: 'kitchenassistant-9befd.appspot.com',
     iosBundleId: 'com.example.kitchenAssistant',
   );
 
@@ -72,7 +72,7 @@ class DefaultFirebaseOptions {
     appId: '1:222160994742:ios:39d1c9de37736a023e8117',
     messagingSenderId: '222160994742',
     projectId: 'kitchenassistant-9befd',
-    storageBucket: 'kitchenassistant-9befd.firebasestorage.app',
+    storageBucket: 'kkitchenassistant-9befd.appspot.com',
     iosBundleId: 'com.example.kitchenAssistant',
   );
 
@@ -82,7 +82,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '222160994742',
     projectId: 'kitchenassistant-9befd',
     authDomain: 'kitchenassistant-9befd.firebaseapp.com',
-    storageBucket: 'kitchenassistant-9befd.firebasestorage.app',
+    storageBucket: 'kitchenassistant-9befd.appspot.com',
     measurementId: 'G-HRYGK96797',
   );
 }
