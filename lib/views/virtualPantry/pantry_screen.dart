@@ -94,6 +94,7 @@ class _PantryPageState extends State<PantryPage> {
         backgroundColor: Colors.transparent,
         floatingActionButton: FloatingActionButton(
           backgroundColor: const Color(0xFF7BF1A8),
+          shape: const CircleBorder(),
           child: const Icon(Icons.add, color: Colors.white),
           onPressed: () {
             Navigator.push(
