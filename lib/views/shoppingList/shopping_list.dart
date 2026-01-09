@@ -1,26 +1,125 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:provider/provider.dart';
+import '../../viewmodels/shopping_list_viewmodel.dart';
+import '../../viewmodels/virtualPantry/pantry_viewmodel.dart';
+import '../../models/shopping_list_model.dart';
 
-class ShoppingPage extends StatelessWidget {
+class ShoppingPage extends StatefulWidget {
   const ShoppingPage({super.key});
 
   @override
+  State<ShoppingPage> createState() => _ShoppingPageState();
+}
+
+class _ShoppingPageState extends State<ShoppingPage> {
+  late ShoppingListViewModel _viewModel;
+  final Set<String> _checkedItems = {}; // Track checked items
+
+  @override
+  void initState() {
+    super.initState();
+    _viewModel = ShoppingListViewModel();
+    _viewModel.loadShoppingItems();
+  }
+
+  @override
+  void dispose() {
+    _viewModel.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            _buildHeaderSection(),
-            _buildShoppingListContent(),
-          ],
+    return ChangeNotifierProvider.value(
+      value: _viewModel,
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: StreamBuilder<List<ShoppingItem>>(
+          stream: _viewModel.getShoppingItemsStream(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            if (snapshot.hasError) {
+              return Center(child: Text('Lỗi: ${snapshot.error}'));
+            }
+
+            final items = snapshot.data ?? [];
+            final groupedItems = _groupItemsByCategory(items);
+            final stats = _calculateStats(items);
+
+            return SingleChildScrollView(
+              child: Column(
+                children: [
+                  // Truyền allItems vào header
+                  _buildHeaderSection(stats, items.length, items),
+                  _buildShoppingListContent(groupedItems),
+                ],
+              ),
+            );
+          },
         ),
+        floatingActionButton: _buildFloatingActionButton(context),
       ),
-      floatingActionButton: _buildFloatingActionButton(context),
     );
   }
 
-  Widget _buildHeaderSection() {
+  Map<String, List<ShoppingItem>> _groupItemsByCategory(
+    List<ShoppingItem> items,
+  ) {
+    final Map<String, List<ShoppingItem>> grouped = {};
+
+    for (var item in items) {
+      // Lấy category từ ingredientId (sẽ được resolve sau)
+      const categoryName = 'Khác'; // Mặc định
+
+      if (!grouped.containsKey(categoryName)) {
+        grouped[categoryName] = [];
+      }
+      grouped[categoryName]!.add(item);
+    }
+
+    return grouped;
+  }
+
+  Map<String, dynamic> _calculateStats(List<ShoppingItem> items) {
+    final total = items.length;
+    final checked = _checkedItems.length;
+    final pending = total - checked;
+    final percentage = total > 0 ? (checked / total * 100).round() : 0;
+
+    return {
+      'total': total,
+      'purchased': checked,
+      'pending': pending,
+      'percentage': percentage,
+    };
+  }
+
+  String _getCategoryEmoji(String categoryName) {
+    switch (categoryName) {
+      case 'Rau củ':
+        return '🥬';
+      case 'Thịt & Hải sản':
+        return '🥩';
+      case 'Bánh':
+        return '🍞';
+      case 'Sữa':
+        return '🥛';
+      case 'Đông lạnh':
+        return '❄️';
+      default:
+        return '📦';
+    }
+  }
+
+  Widget _buildHeaderSection(
+    Map<String, dynamic> stats,
+    int totalItems,
+    List<ShoppingItem> allItems,
+  ) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
@@ -32,8 +131,6 @@ class ShoppingPage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 24),
-
-        
           Row(
             children: [
               Container(
@@ -58,16 +155,12 @@ class ShoppingPage extends StatelessWidget {
               ),
             ],
           ),
-
           const SizedBox(height: 16),
-
-          const Text(
-            '6 thực phẩm cần có trong kho nguyên liệu',
-            style: TextStyle(fontSize: 15, color: Color(0xFF495565)),
+          Text(
+            '$totalItems thực phẩm cần có trong kho nguyên liệu',
+            style: const TextStyle(fontSize: 15, color: Color(0xFF495565)),
           ),
-
           const SizedBox(height: 24),
-
           Container(
             width: double.infinity,
             height: 12,
@@ -77,7 +170,9 @@ class ShoppingPage extends StatelessWidget {
             ),
             child: FractionallySizedBox(
               alignment: Alignment.centerLeft,
-              widthFactor: 0.0,
+              widthFactor: stats['total'] > 0
+                  ? (_checkedItems.length / stats['total']).clamp(0.0, 1.0)
+                  : 0.0,
               child: Container(
                 decoration: BoxDecoration(
                   color: const Color(0xFF155CFB),
@@ -86,19 +181,17 @@ class ShoppingPage extends StatelessWidget {
               ),
             ),
           ),
-
           const SizedBox(height: 12),
-
-          const Row(
+          Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '0 of 7 items',
-                style: TextStyle(fontSize: 13, color: Color(0xFF495565)),
+                '${_checkedItems.length} of ${stats['total']} items',
+                style: const TextStyle(fontSize: 13, color: Color(0xFF495565)),
               ),
               Text(
-                '0%',
-                style: TextStyle(
+                '${stats['total'] > 0 ? (_checkedItems.length / stats['total'] * 100).round() : 0}%',
+                style: const TextStyle(
                   fontSize: 14,
                   color: Color(0xFF155CFB),
                   fontWeight: FontWeight.w500,
@@ -106,15 +199,13 @@ class ShoppingPage extends StatelessWidget {
               ),
             ],
           ),
-
           const SizedBox(height: 24),
-
           Row(
             children: [
               Expanded(
                 child: _buildStatCard(
                   'Tổng',
-                  '7',
+                  stats['total'].toString(),
                   const Color(0xFFEEF5FE),
                   const Color(0xFFBDDAFF),
                 ),
@@ -122,8 +213,8 @@ class ShoppingPage extends StatelessWidget {
               const SizedBox(width: 16),
               Expanded(
                 child: _buildStatCard(
-                  'Đã mua',
-                  '0',
+                  'Đã chọn',
+                  _checkedItems.length.toString(),
                   const Color(0xFFF0FDF4),
                   const Color(0xFFB8F7CF),
                 ),
@@ -131,17 +222,103 @@ class ShoppingPage extends StatelessWidget {
               const SizedBox(width: 16),
               Expanded(
                 child: _buildStatCard(
-                  'Còn thiếu',
-                  '6',
+                  'Còn lại',
+                  (stats['total'] - _checkedItems.length).toString(),
                   const Color(0xFFFFF7EC),
                   const Color(0xFFFFD6A7),
                 ),
               ),
             ],
           ),
+          // Button thêm vào kho
+          if (_checkedItems.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton(
+                onPressed: () => _addCheckedItemsToPantry(allItems),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF7BF1A8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'Thêm vào kho',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
+  }
+
+  /// Xử lý thêm items đã check vào kho
+  Future<void> _addCheckedItemsToPantry(List<ShoppingItem> allItems) async {
+    if (_checkedItems.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Vui lòng chọn ít nhất một item'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    try {
+      // Lọc ra các items đã được check từ danh sách stream
+      final checkedItemsList = allItems
+          .where((item) => _checkedItems.contains(item.id))
+          .toList();
+
+      if (checkedItemsList.isEmpty) {
+        throw Exception('Không tìm thấy items đã chọn');
+      }
+
+      // Gọi ViewModel với danh sách items thực tế
+      await _viewModel.addCheckedItemsToPantry(checkedItemsList);
+
+      // Refresh pantry nếu có
+      try {
+        final pantryViewModel = Provider.of<PantryViewModel>(
+          context,
+          listen: false,
+        );
+        await pantryViewModel.loadIngredients();
+      } catch (e) {
+        print('Lỗi refresh pantry: $e');
+      }
+
+      // Clear checked items
+      setState(() {
+        _checkedItems.clear();
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Đã thêm vào kho nguyên liệu!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Widget _buildStatCard(
@@ -178,7 +355,26 @@ class ShoppingPage extends StatelessWidget {
     );
   }
 
-  Widget _buildShoppingListContent() {
+  Widget _buildShoppingListContent(
+    Map<String, List<ShoppingItem>> groupedItems,
+  ) {
+    if (groupedItems.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(48),
+        child: const Column(
+          children: [
+            Icon(Icons.shopping_cart_outlined, size: 64, color: Colors.grey),
+            SizedBox(height: 16),
+            Text(
+              'Danh sách mua sắm trống',
+              style: TextStyle(fontSize: 16, color: Colors.grey),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Container(
       width: double.infinity,
       decoration: const BoxDecoration(
@@ -192,35 +388,21 @@ class ShoppingPage extends StatelessWidget {
         padding: const EdgeInsets.all(24),
         child: Column(
           children: [
-            _buildCategorySection('🥬', 'Rau củ', 3, [
-              _buildShoppingItem('Cà chua', '4kg', 'Mì Ý sốt kem cà chua'),
-              _buildShoppingItem('Tỏi', '4 tép', 'Mì Ý sốt kem cà chua'),
-              _buildShoppingItem('Húng quế', '1 bó', 'Mì Ý sốt kem cà chua'),
-            ]),
-
-            const SizedBox(height: 32),
-
-            _buildCategorySection('🥩', 'Thịt & Hải sản', 2, [
-              _buildShoppingItem('Ức gà', '2 miếng', 'Mì Ý sốt kem cà chua'),
-              _buildShoppingItem(
-                'Phi lê cá hồi',
-                '2 miếng',
-                'Mì Ý sốt kem cà chua',
-              ),
-            ]),
-
-            const SizedBox(height: 32),
-
-            _buildCategorySection('🍞', 'Khác', 1, [
-              _buildShoppingItem(
-                'Bánh mì',
-                '1 cái',
-                'Mì Ý sốt kem cà chua',
-                hasEdit: true,
-              ),
-            ]),
-
-            const SizedBox(height: 100), 
+            ...groupedItems.entries.map((entry) {
+              return Column(
+                children: [
+                  _buildCategorySection(
+                    _getCategoryEmoji(entry.key),
+                    entry.key,
+                    entry.value.length,
+                    entry.value,
+                  ),
+                  if (entry != groupedItems.entries.last)
+                    const SizedBox(height: 32),
+                ],
+              );
+            }),
+            const SizedBox(height: 100),
           ],
         ),
       ),
@@ -231,7 +413,7 @@ class ShoppingPage extends StatelessWidget {
     String emoji,
     String title,
     int count,
-    List<Widget> items,
+    List<ShoppingItem> items,
   ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -262,134 +444,85 @@ class ShoppingPage extends StatelessWidget {
             ),
           ],
         ),
-
         const SizedBox(height: 16),
-
-      
-        ...items,
+        ...items.map((item) => _buildShoppingItem(item)),
       ],
     );
   }
 
+  Widget _buildShoppingItem(ShoppingItem item) {
+    final isChecked = _checkedItems.contains(item.id);
 
-  Widget _buildShoppingItem(
-    String name,
-    String quantity,
-    String recipe, {
-    bool hasEdit = false,
-  }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border.all(color: const Color(0xFFE5E7EB), width: 2),
+        border: Border.all(
+          color: isChecked ? const Color(0xFF7BF1A8) : const Color(0xFFE5E7EB),
+          width: 2,
+        ),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
         children: [
-        
-          Container(
-            width: 28,
-            height: 28,
-            decoration: BoxDecoration(
-              border: Border.all(color: const Color(0xFFD0D5DB), width: 2),
-              borderRadius: BorderRadius.circular(14),
+          // Checkbox - CHỈ CẬP NHẬT LOCAL STATE
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                if (isChecked) {
+                  _checkedItems.remove(item.id);
+                } else {
+                  _checkedItems.add(item.id);
+                }
+              });
+              // KHÔNG gọi database ở đây
+            },
+            child: Container(
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(
+                color: isChecked ? const Color(0xFF7BF1A8) : Colors.transparent,
+                border: Border.all(
+                  color: isChecked
+                      ? const Color(0xFF7BF1A8)
+                      : const Color(0xFFD0D5DB),
+                  width: 2,
+                ),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: isChecked
+                  ? const Icon(Icons.check, color: Colors.white, size: 18)
+                  : null,
             ),
           ),
-
           const SizedBox(width: 12),
-
-        
+          // Content
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  name,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF101727),
-                  ),
-                ),
-
+                _buildIngredientName(item),
                 const SizedBox(height: 4),
-
                 Text(
-                  quantity,
+                  '${item.requiredQuantity} ${item.unit}',
                   style: const TextStyle(
                     fontSize: 13,
                     color: Color(0xFF495565),
                   ),
                 ),
-
-                const SizedBox(height: 12),
-
-              
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFECD4),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      SvgPicture.asset(
-                        'assets/images/icon_viewRecipe.svg',
-                        width: 14,
-                        height: 14,
-                        colorFilter: const ColorFilter.mode(
-                          Color(0xFFC93400),
-                          BlendMode.srcIn,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      const Text(
-                        '1 công thức',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFFC93400),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 8),
-
-                Text(
-                  'Món ăn: $recipe',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: Color(0xFF697282),
-                  ),
-                ),
+                // Hiển thị tên công thức nấu ăn
+                if (item.recipeIds.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  _buildRecipeNames(item.recipeIds),
+                ],
               ],
             ),
           ),
-
-        
-          Row(
-          children: [
-            if (hasEdit)
-              ColorFiltered(
-                colorFilter: const ColorFilter.mode(
-                  Color(0xFF99A1AF),
-                  BlendMode.srcIn,
-                ),
-                child: Image.asset(
-                  'assets/images/icon_edit.png',
-                  width: 16,
-                  height: 16,
-                ),
-              ),
-            const SizedBox(width: 8),
-            ColorFiltered(
+          // Delete button
+          GestureDetector(
+            onTap: () => _showDeleteDialog(item),
+            child: ColorFiltered(
               colorFilter: const ColorFilter.mode(
                 Color(0xFF99A1AF),
                 BlendMode.srcIn,
@@ -400,13 +533,147 @@ class ShoppingPage extends StatelessWidget {
                 height: 16,
               ),
             ),
-          ],
           ),
         ],
       ),
     );
   }
 
+  Widget _buildIngredientName(ShoppingItem item) {
+    return FutureBuilder<String>(
+      future: _viewModel.getIngredientName(item.ingredientId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Text(
+            'Đang tải...',
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF101727),
+            ),
+          );
+        }
+
+        final name = snapshot.data ?? item.ingredientId;
+        return Text(
+          name,
+          style: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF101727),
+          ),
+        );
+      },
+    );
+  }
+
+Widget _buildRecipeNames(List<String> recipeIds) {
+  return FutureBuilder<List<String>>(
+    future: _viewModel.getRecipeNames(recipeIds),
+    builder: (context, snapshot) {
+      if (snapshot.connectionState == ConnectionState.waiting) {
+        return const SizedBox.shrink();
+      }
+
+      final recipeNames = snapshot.data ?? [];
+      if (recipeNames.isEmpty) return const SizedBox.shrink();
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFECD4),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SvgPicture.asset(
+                  'assets/images/icon_viewRecipe.svg',
+                  width: 14,
+                  height: 14,
+                  colorFilter: const ColorFilter.mode(
+                    Color(0xFFC93400),
+                    BlendMode.srcIn,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  '${recipeNames.length} công thức',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFFC93400),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Món ăn: ${recipeNames.join(', ')}',
+            style: const TextStyle(
+              fontSize: 11,
+              color: Color(0xFF697282),
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      );
+    },
+  );
+}
+
+  void _showEditDialog(ShoppingItem item) {
+    // TODO: Implement edit dialog
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Chức năng chỉnh sửa đang được phát triển')),
+    );
+  }
+
+  void _showDeleteDialog(ShoppingItem item) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Xóa mục'),
+        content: const Text('Bạn có chắc chắn muốn xóa mục này?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Hủy'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              try {
+                await _viewModel.deleteShoppingItem(item.id);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Đã xóa thành công'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Lỗi: ${e.toString()}'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
+            child: const Text('Xóa', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildFloatingActionButton(BuildContext context) {
     return GestureDetector(
@@ -449,7 +716,7 @@ class ShoppingPage extends StatelessWidget {
                 bottom: 0,
                 left: 0,
                 right: 0,
-                child: const CreateShopping(),
+                child: CreateShopping(viewModel: _viewModel),
               ),
             ],
           ),
@@ -460,7 +727,9 @@ class ShoppingPage extends StatelessWidget {
 }
 
 class CreateShopping extends StatefulWidget {
-  const CreateShopping({super.key});
+  final ShoppingListViewModel viewModel;
+
+  const CreateShopping({super.key, required this.viewModel});
 
   @override
   State<CreateShopping> createState() => _CreateShoppingState();
@@ -469,6 +738,7 @@ class CreateShopping extends StatefulWidget {
 class _CreateShoppingState extends State<CreateShopping> {
   final TextEditingController nameController = TextEditingController();
   final TextEditingController quantityController = TextEditingController();
+  final TextEditingController unitController = TextEditingController();
   String selectedCategory = '';
 
   final List<Map<String, String>> categories = [
@@ -502,6 +772,8 @@ class _CreateShoppingState extends State<CreateShopping> {
             _buildNameField(),
             const SizedBox(height: 24),
             _buildQuantityField(),
+            const SizedBox(height: 24),
+            _buildUnitField(),
             const SizedBox(height: 24),
             _buildCategorySection(),
             const SizedBox(height: 32),
@@ -591,8 +863,45 @@ class _CreateShoppingState extends State<CreateShopping> {
         const SizedBox(height: 8),
         TextField(
           controller: quantityController,
+          keyboardType: TextInputType.number,
           decoration: InputDecoration(
-            hintText: 'e.g. 2 quả',
+            hintText: 'e.g. 2',
+            hintStyle: const TextStyle(color: Color(0xFF697282), fontSize: 14),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(color: Color(0xFFE5E7EB), width: 2),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(color: Color(0xFF00C850), width: 2),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 12,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildUnitField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Đơn vị',
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF101727),
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: unitController,
+          decoration: InputDecoration(
+            hintText: 'e.g. kg, quả, miếng',
             hintStyle: const TextStyle(color: Color(0xFF697282), fontSize: 14),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
@@ -625,20 +934,17 @@ class _CreateShoppingState extends State<CreateShopping> {
           ),
         ),
         const SizedBox(height: 12),
-
         LayoutBuilder(
           builder: (context, constraints) {
             const columns = 2;
             const spacing = 12.0;
-            final itemWidth =
-                (constraints.maxWidth - spacing) / columns;
+            final itemWidth = (constraints.maxWidth - spacing) / columns;
 
             return Wrap(
               spacing: spacing,
               runSpacing: spacing,
               children: categories.map((category) {
-                final isSelected =
-                    selectedCategory == category['name'];
+                final isSelected = selectedCategory == category['name'];
 
                 return GestureDetector(
                   onTap: () {
@@ -649,9 +955,7 @@ class _CreateShoppingState extends State<CreateShopping> {
                   child: SizedBox(
                     width: itemWidth,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 10,
-                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
                       decoration: BoxDecoration(
                         color: isSelected
                             ? const Color(0xFF00C850)
@@ -670,9 +974,7 @@ class _CreateShoppingState extends State<CreateShopping> {
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 14,
-                          color: isSelected
-                              ? Colors.white
-                              : Colors.black,
+                          color: isSelected ? Colors.white : Colors.black,
                           fontWeight: isSelected
                               ? FontWeight.w500
                               : FontWeight.w400,
@@ -688,18 +990,68 @@ class _CreateShoppingState extends State<CreateShopping> {
       ],
     );
   }
+
   Widget _buildAddButton() {
     return SizedBox(
       width: double.infinity,
       height: 50,
       child: ElevatedButton(
-        onPressed: () {
-        
+        onPressed: () async {
           if (nameController.text.isNotEmpty &&
               quantityController.text.isNotEmpty &&
+              unitController.text.isNotEmpty &&
               selectedCategory.isNotEmpty) {
-          
-            Navigator.pop(context);
+            try {
+              final quantity = double.tryParse(quantityController.text);
+              if (quantity == null || quantity <= 0) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Số lượng không hợp lệ'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+                return;
+              }
+
+              // Tạo ingredient_id từ tên (có thể cải thiện sau)
+              final ingredientId = nameController.text.toLowerCase().replaceAll(
+                ' ',
+                '_',
+              );
+
+              await widget.viewModel.addManualShoppingItem(
+                ingredientId: ingredientId,
+                ingredientName: nameController.text,
+                quantity: quantity,
+                unit: unitController.text,
+              );
+
+              if (mounted) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Đã thêm vào danh sách mua sắm'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              }
+            } catch (e) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Lỗi: ${e.toString()}'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            }
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Vui lòng điền đầy đủ thông tin'),
+                backgroundColor: Colors.orange,
+              ),
+            );
           }
         },
         style: ElevatedButton.styleFrom(
@@ -725,6 +1077,7 @@ class _CreateShoppingState extends State<CreateShopping> {
   void dispose() {
     nameController.dispose();
     quantityController.dispose();
+    unitController.dispose();
     super.dispose();
   }
 }
