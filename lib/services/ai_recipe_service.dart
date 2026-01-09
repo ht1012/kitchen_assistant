@@ -53,48 +53,79 @@ class SmartRecipeProvider {
       return [];
     }
   }
-  Future<List<Recipe>> getRecipesForIngredient(String ingredientName) async {
-    // BƯỚC 1: Tìm trong Database trước (Ưu tiên tốc độ, miễn phí)
-    final snapshot = await db.collection('recipes')
-        .where('search_keywords', arrayContains: ingredientName)
-        .get();
-
-    if (snapshot.docs.isNotEmpty) {
-      print("✅ Tìm thấy trong DB!");
-      return snapshot.docs.map((d) => Recipe.fromJson(d.data())).toList();
-    }
-
-    // BƯỚC 2: Nếu DB rỗng -> Gọi AI (Chậm hơn chút, tốn phí nhỏ)
-    print("🤖 DB chưa có, đang gọi AI sáng tạo...");
-    return await _generateRecipeFromAI(ingredientName);
-  }
 
   Future<List<Recipe>> _generateRecipeFromAI(String ingredient) async {
     // Khởi tạo model Gemini
-    final model = FirebaseVertexAI.instance.generativeModel(model: 'gemini-1.5-flash');
+    final model = FirebaseVertexAI.instance.generativeModel(
+      model: 'gemini-2.5-pro',
+      generationConfig: GenerationConfig(responseMimeType: 'application/json')  
+    );
 
     // Prompt yêu cầu trả về JSON chuẩn Schema của bạn
     final prompt = [Content.text('''
-      Tôi có nguyên liệu: "$ingredient". 
-      Hãy tạo 1 công thức nấu ăn Việt Nam phù hợp.
-      Yêu cầu: Trả về JSON thuần túy, không markdown.
-      Cấu trúc JSON bắt buộc phải khớp mẫu này:
-      {
-        "name": "Tên món",
-        "ingredients_requirements": [{"id": "...", "amount": 0, "unit": "..."}],
-        "steps": ["..."],
-        "tags": {...}
-      }
+      Bạn là chuyên gia dữ liệu ẩm thực cho App Bếp Trợ Lý.
+      Hãy tạo 1 công thức món ăn từ nguyên liệu chính: "{${ingredient}}".
+      
+      YÊU CẦU OUTPUT: Trả về JSON Array thuần túy.
+      
+      QUY TẮC DỮ LIỆU (BẮT BUỘC):
+      1. tags: Phân loại chính xác.
+        - cuisine: "Việt Nam" | "Trung Quốc" | "Châu Âu" | "Thái Lan"
+        - meal_time: "sáng" | "trưa" | "tối"
+        - cook_time: "nhohon_20" (dưới 20p) | "20den35" (20p đến 35p) | "lonhon_35"(lớn hơn 35p)
+        - servings: 1 (khẩu phần ăn có thể là 1 người hoặc nhiều hơn 1)
+        
+      2. ingredients_requirements: Dùng để tính toán tồn kho.
+        - "id": Viết thường, không dấu, nối bằng gạch dưới (snake_case). VD: "Thịt ba chỉ" -> "thit_heo", "Trứng gà" -> "trung_ga".
+        - "unit": CHỈ DÙNG các đơn vị chuẩn: "g" (cho khối lượng), "ml" (cho lỏng), "qua" (cho trứng, trái cây), "cu" (cho hành tây, tỏi), "tep" (tép tỏi).
+        - "amount": Phải là số (Int/Float). Tự động quy đổi (VD: 1kg -> 1000).
+      
+      CẤU TRÚC MẪU:
+      [
+        {{
+          "recipe_id": mon1(id của món ăn),
+          "recipe_name": "Thịt kho trứng",
+          "description": "Món ăn đậm đà...",
+          "difficulty":  (biến enum chữa 'dễ' hoặc 'trung bình' hoặc 'khó'),
+          "categories": {{
+              "cuisine": "vietnam",
+              "meal_time": "toi",
+              "cook_time": "20den35",
+              "servings": 4
+          }},
+          "calories": (chứa tổng calo của món ăn),
+          "prep_time": 15(thời gian chuẩn bị),
+          "recipe_image": ""(tạo liên kết chứa ảnh được lưu trong thư mục recipe/images nằm trên Storage của firebase console),
+          "video_url": ""(tạo liên kết chứa video được lưu trong thư mục recipe/videos nằm trên Storage của firebase console),
+          "ingredients_requirements": [
+              {{ "id": "thit_heo", "name": "Thịt ba chỉ", "amount": 500, "unit": "g" }},
+              {{ "id": "trung_ga", "name": "Trứng gà", "amount": 4, "unit": "qua" }},
+              {{ "id": "nuoc_dua", "name": "Nước dừa", "amount": 300, "unit": "ml" }}
+          ],
+          "steps": ["Bước 1...", "Bước 2..."](đây là 1 mảng các bước chuẩn bị và nấu ăn)
+        }}
+      ]
     ''')];
 
     try {
       final response = await model.generateContent(prompt);
       final jsonString = response.text!.replaceAll('```json', '').replaceAll('```', '');
       
-      // Parse JSON thành Object Recipe
-      // 2. Decode và ép kiểu an toàn
-      final Map<String, dynamic> recipeData = Map<String, dynamic>.from(jsonDecode(jsonString));
+      // 1. Decode ra biến dynamic trước để kiểm tra kiểu
+      final dynamic decodedJson = jsonDecode(jsonString);
+      Map<String, dynamic> recipeData;
 
+      // 2. Kiểm tra xem AI trả về List [] hay Map {}
+      if (decodedJson is List) {
+        if (decodedJson.isEmpty) return []; // Nếu list rỗng thì dừng
+        // Lấy phần tử đầu tiên trong mảng
+        recipeData = Map<String, dynamic>.from(decodedJson[0]);
+      } else if (decodedJson is Map) {
+        // Nếu AI lỡ trả về object lẻ thì vẫn chạy tốt
+        recipeData = Map<String, dynamic>.from(decodedJson);
+      } else {
+        throw Exception("AI trả về format không hỗ trợ: $decodedJson");
+      }
       // 3. Bổ sung các trường hệ thống mà AI không biết
       final String newId = DateTime.now().millisecondsSinceEpoch.toString();
       recipeData['recipe_id'] = newId; 
@@ -116,6 +147,7 @@ class SmartRecipeProvider {
       return []; // Fallback cuối cùng nếu AI cũng lỗi
     }
   }
+    
 
   /// So sánh nguyên liệu trong kho với công thức và trả về danh sách RecipeMatch
   /// [pantryIngredients]: Danh sách nguyên liệu trong kho
@@ -133,7 +165,7 @@ class SmartRecipeProvider {
     } else {
       // Lấy tất cả công thức nếu không có filter
       final snapshot = await db.collection('recipes').get();
-      allRecipes = snapshot.docs.map((d) => Recipe.fromFirestore(d)).toList();
+      allRecipes = snapshot.docs.map((d) => Recipe.fromFirestore(d)).toList();      
     }
 
     // 2. Tạo map từ tên nguyên liệu trong kho (normalized) để tìm kiếm nhanh
@@ -177,10 +209,28 @@ class SmartRecipeProvider {
         matches.add(match);
       }
     }
+  // --- ĐIỂM TÍCH HỢP AI BẮT ĐẦU TỪ ĐÂY ---
+    
+    // Nếu không tìm thấy món nào phù hợp (matches rỗng) VÀ trong kho có đồ
+    if (matches.isEmpty && pantryIngredients.isNotEmpty) {
+      print("🕵️ Không tìm thấy công thức phù hợp trong DB. Đang gọi AI...");
 
+      // Chiến thuật: Lấy nguyên liệu đầu tiên hoặc nguyên liệu có số lượng nhiều nhất làm "chủ đề"
+      // Ở đây mình lấy nguyên liệu đầu tiên trong danh sách để demo
+      String mainIngredientName = pantryIngredients[0].name;
+
+      // Gọi hàm sinh công thức AI
+      List<Recipe> aiRecipes = await _generateRecipeFromAI(mainIngredientName);
+
+      // Nếu AI sinh được món, ta phải tính toán lại độ phù hợp (RecipeMatch) cho món mới này
+      for (var recipe in aiRecipes) {
+        final match = _calculateRecipeMatch(recipe, pantryMapByName, pantryMapById);
+        // AI sinh ra dựa trên nguyên liệu mình có, nên tỷ lệ match thường sẽ cao
+        matches.add(match);
+      }
+    }
     // 4. Sắp xếp theo match percentage giảm dần
     matches.sort(RecipeMatch.compareByMatch);
-
     return matches;
   }
 
