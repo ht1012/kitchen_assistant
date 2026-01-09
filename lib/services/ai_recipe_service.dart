@@ -1,5 +1,6 @@
 import 'package:firebase_vertexai/firebase_vertexai.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import '../models/Recipe.dart';
 import '../models/RecipeMatch.dart';
 import '../models/virtualPantry/ingredient_model.dart';
@@ -11,7 +12,6 @@ class SmartRecipeProvider {
     Query query = db.collection('recipes');
 
     // 1. Áp dụng các điều kiện lọc
-    // Lưu ý: Key của filters phải khớp với tên trường trong Firestore (categories.xxx)
     if (filters['cuisine'] != null) {
       query = query.where('categories.cuisine', isEqualTo: filters['cuisine']);
     }
@@ -54,17 +54,33 @@ class SmartRecipeProvider {
     }
   }
 
-  Future<List<Recipe>> _generateRecipeFromAI(String ingredient) async {
-    // Khởi tạo model Gemini
+  Future<List<Recipe>> _generateRecipeFromAI(
+    String ingredientSummary,
+    Map<String, dynamic> filter,
+  ) async {
+    // Khởi tạo model Gemini cho sinh công thức (JSON)
     final model = FirebaseVertexAI.instance.generativeModel(
       model: 'gemini-2.5-pro',
-      generationConfig: GenerationConfig(responseMimeType: 'application/json')  
+      generationConfig: GenerationConfig(responseMimeType: 'application/json'),
     );
 
+    // Chuẩn bị mô tả filter (nếu có) để AI hiểu bối cảnh lọc
+    final cuisineFilter = filter['cuisine'] ?? '';
+    final mealTimeFilter = filter['meal_time'] ?? '';
+    final cookTimeFilter = filter['cook_time'] ?? '';
+    final servingsFilter = filter['servings'] ?? '';
+
     // Prompt yêu cầu trả về JSON chuẩn Schema của bạn
-    final prompt = [Content.text('''
+    final prompt = [
+      Content.text('''
       Bạn là chuyên gia dữ liệu ẩm thực cho App Bếp Trợ Lý.
-      Hãy tạo 1 công thức món ăn từ nguyên liệu chính: "{${ingredient}}".
+      Hãy tạo 1 công thức món ăn từ các nguyên liệu đang có trong kho: "$ingredientSummary".
+
+      Nếu có thể, hãy ưu tiên:
+      - Loại ẩm thực (cuisine): "$cuisineFilter"
+      - Thời điểm ăn (meal_time): "$mealTimeFilter"
+      - Thời gian nấu (cook_time): "$cookTimeFilter"
+      - Khẩu phần (servings): "$servingsFilter"
       
       YÊU CẦU OUTPUT: Trả về JSON Array thuần túy.
       
@@ -72,45 +88,47 @@ class SmartRecipeProvider {
       1. tags: Phân loại chính xác.
         - cuisine: "Việt Nam" | "Trung Quốc" | "Châu Âu" | "Thái Lan"
         - meal_time: "sáng" | "trưa" | "tối"
-        - cook_time: "nhohon_20" (dưới 20p) | "20den35" (20p đến 35p) | "lonhon_35"(lớn hơn 35p)
-        - servings: 1 (khẩu phần ăn có thể là 1 người hoặc nhiều hơn 1)
+        - cook_time: "nhohon_20" | "20den35" | "lonhon_35"
+        - servings: số nguyên > 0
         
       2. ingredients_requirements: Dùng để tính toán tồn kho.
-        - "id": Viết thường, không dấu, nối bằng gạch dưới (snake_case). VD: "Thịt ba chỉ" -> "thit_heo", "Trứng gà" -> "trung_ga".
-        - "unit": CHỈ DÙNG các đơn vị chuẩn: "g" (cho khối lượng), "ml" (cho lỏng), "qua" (cho trứng, trái cây), "cu" (cho hành tây, tỏi), "tep" (tép tỏi).
+        - "id": Viết thường, không dấu, snake_case. VD: "Thịt ba chỉ" -> "thit_ba_chi"
+        - "unit": CHỈ DÙNG: "g", "ml", "qua", "cu", "tep"
         - "amount": Phải là số (Int/Float). Tự động quy đổi (VD: 1kg -> 1000).
       
       CẤU TRÚC MẪU:
       [
-        {{
-          "recipe_id": mon1(id của món ăn),
+        {
+          "recipe_id": "mon1",
           "recipe_name": "Thịt kho trứng",
           "description": "Món ăn đậm đà...",
-          "difficulty":  (biến enum chữa 'dễ' hoặc 'trung bình' hoặc 'khó'),
-          "categories": {{
+          "difficulty": "dễ" | "trung bình" | "khó",
+          "categories": {
               "cuisine": "vietnam",
               "meal_time": "toi",
               "cook_time": "20den35",
               "servings": 4
-          }},
-          "calories": (chứa tổng calo của món ăn),
-          "prep_time": 15(thời gian chuẩn bị),
-          "recipe_image": ""(tạo liên kết chứa ảnh được lưu trong thư mục recipe/images nằm trên Storage của firebase console),
-          "video_url": ""(tạo liên kết chứa video được lưu trong thư mục recipe/videos nằm trên Storage của firebase console),
+          },
+          "calories": 650,
+          "prep_time": 15,
+          "recipe_image": "",    // Sẽ được hệ thống tự sinh bằng AI Image
+          "video_url": "",       // Có thể để trống
           "ingredients_requirements": [
-              {{ "id": "thit_heo", "name": "Thịt ba chỉ", "amount": 500, "unit": "g" }},
-              {{ "id": "trung_ga", "name": "Trứng gà", "amount": 4, "unit": "qua" }},
-              {{ "id": "nuoc_dua", "name": "Nước dừa", "amount": 300, "unit": "ml" }}
+              { "id": "thit_ba_chi", "name": "Thịt ba chỉ", "amount": 500, "unit": "g" },
+              { "id": "trung_ga", "name": "Trứng gà", "amount": 4, "unit": "qua" },
+              { "id": "nuoc_dua", "name": "Nước dừa", "amount": 300, "unit": "ml" }
           ],
-          "steps": ["Bước 1...", "Bước 2..."](đây là 1 mảng các bước chuẩn bị và nấu ăn)
-        }}
+          "steps": ["Bước 1...", "Bước 2..."]
+        }
       ]
-    ''')];
+    '''),
+    ];
 
     try {
       final response = await model.generateContent(prompt);
-      final jsonString = response.text!.replaceAll('```json', '').replaceAll('```', '');
-      
+      final jsonString =
+          response.text!.replaceAll('```json', '').replaceAll('```', '');
+
       // 1. Decode ra biến dynamic trước để kiểm tra kiểu
       final dynamic decodedJson = jsonDecode(jsonString);
       Map<String, dynamic> recipeData;
@@ -126,20 +144,40 @@ class SmartRecipeProvider {
       } else {
         throw Exception("AI trả về format không hỗ trợ: $decodedJson");
       }
+
       // 3. Bổ sung các trường hệ thống mà AI không biết
       final String newId = DateTime.now().millisecondsSinceEpoch.toString();
-      recipeData['recipe_id'] = newId; 
+      recipeData['recipe_id'] = newId;
       recipeData['is_ai_generated'] = true;
       // Thêm search_keywords để lần sau tìm là thấy ngay
-      recipeData['search_keywords'] = [ingredient]; 
       recipeData['created_at'] = FieldValue.serverTimestamp();
 
-      // 4. Tạo đối tượng Recipe từ dữ liệu đã bổ sung
-      Recipe newRecipe = Recipe.fromJson(recipeData);
+      // 4. Gọi AI IMAGE để sinh ảnh minh họa món ăn
+      try {
+        final String recipeName =
+            recipeData['recipe_name']?.toString() ?? 'Món ăn';
+        final List<dynamic>? ingredientList =
+            recipeData['ingredients_requirements'] as List<dynamic>?;
+
+        final imageUrl = await _generateRecipeImage(
+          newId,
+          recipeName,
+          ingredientList,
+        );
+
+        if (imageUrl != null && imageUrl.isNotEmpty) {
+          recipeData['recipe_image'] = imageUrl;
+        }
+      } catch (e) {
+        // Nếu AI image lỗi thì bỏ qua, vẫn lưu công thức bình thường
+        print('❌ Lỗi sinh ảnh AI: $e');
+      }
+
+      // 5. Tạo đối tượng Recipe từ dữ liệu đã bổ sung
+      final Recipe newRecipe = Recipe.fromJson(recipeData);
 
       // BƯỚC 3: Lưu vào DB để làm giàu dữ liệu cho lần sau (Cache)
-      // Thêm trường 'is_ai_generated': true để sau này dễ quản lý
-     await db.collection('recipes').doc(newId).set(recipeData);
+      await db.collection('recipes').doc(newId).set(recipeData);
 
       return [newRecipe];
     } catch (e) {
@@ -205,28 +243,38 @@ class SmartRecipeProvider {
     // 3. So sánh từng công thức với kho
     List<RecipeMatch> matches = [];
     for (var recipe in allRecipes) {
-      final match = _calculateRecipeMatch(recipe, pantryMapByName, pantryMapById);
+      final match = _calculateRecipeMatch(
+        recipe,
+        pantryMapByName,
+        pantryMapById,
+      );
       if (match.matchPercentage >= minMatchPercentage) {
         matches.add(match);
       }
     }
-  // --- ĐIỂM TÍCH HỢP AI BẮT ĐẦU TỪ ĐÂY ---
-    
+
+    // --- ĐIỂM TÍCH HỢP AI BẮT ĐẦU TỪ ĐÂY ---
     // Nếu không tìm thấy món nào phù hợp (matches rỗng) VÀ trong kho có đồ
     if (matches.isEmpty && pantryIngredients.isNotEmpty) {
       print("🕵️ Không tìm thấy công thức phù hợp trong DB. Đang gọi AI...");
 
-      // Chiến thuật: Lấy nguyên liệu đầu tiên hoặc nguyên liệu có số lượng nhiều nhất làm "chủ đề"
-      // Ở đây mình lấy nguyên liệu đầu tiên trong danh sách để demo
-      String mainIngredientName = pantryIngredients[0].slug;
+      // Truyền TOÀN BỘ danh sách nguyên liệu (slug) cho AI
+      final String ingredientSummary =
+          pantryIngredients.map((i) => i.slug).join(', ');
 
-      // Gọi hàm sinh công thức AI
-      List<Recipe> aiRecipes = await _generateRecipeFromAI(mainIngredientName);
+      // Gọi hàm sinh công thức AI dựa trên toàn bộ kho + bộ lọc hiện tại
+      final List<Recipe> aiRecipes = await _generateRecipeFromAI(
+        ingredientSummary,
+        filters ?? <String, dynamic>{},
+      );
 
       // Nếu AI sinh được món, ta phải tính toán lại độ phù hợp (RecipeMatch) cho món mới này
-      for (var recipe in aiRecipes) {
-        final match = _calculateRecipeMatch(recipe, pantryMapByName, pantryMapById);
-        // AI sinh ra dựa trên nguyên liệu mình có, nên tỷ lệ match thường sẽ cao
+      for (final recipe in aiRecipes) {
+        final match = _calculateRecipeMatch(
+          recipe,
+          pantryMapByName,
+          pantryMapById,
+        );
         if (match.matchPercentage >= minMatchPercentage) {
           matches.add(match);
         }
@@ -366,6 +414,60 @@ class SmartRecipeProvider {
     // normalized = _removeVietnameseAccents(normalized);
     
     return normalized;
+  }
+
+  /// Gọi AI IMAGE (Vertex AI) để sinh ảnh món ăn và lưu lên Firebase Storage
+  Future<String?> _generateRecipeImage(
+    String recipeId,
+    String recipeName,
+    List<dynamic>? ingredientsRaw,
+  ) async {
+    try {
+      // Chuẩn bị mô tả nguyên liệu dạng text
+      final ingredientNames = (ingredientsRaw ?? [])
+          .map((e) => (e as Map<String, dynamic>)['name']?.toString() ?? '')
+          .where((name) => name.isNotEmpty)
+          .join(', ');
+
+      final imagePrompt =
+          'Ảnh món ăn chụp từ trên cao, phong cách food photography, ánh sáng tự nhiên, '
+          'tông màu ấm, độ phân giải cao, món: "$recipeName" với các nguyên liệu: $ingredientNames.';
+
+      final imageModel = FirebaseVertexAI.instance.generativeModel(
+        model: 'gemini-2.5-flash-image',
+        generationConfig:  GenerationConfig(responseMimeType: 'image/png'),
+      );
+
+      final imageResponse =
+          await imageModel.generateContent([Content.text(imagePrompt)]);
+
+      // Lấy dữ liệu ảnh dạng base64 từ inlineData
+      final dynamic firstPart =
+          imageResponse.candidates.first.content.parts.first;
+      final String? base64Data = firstPart.inlineData?.data;
+      if (base64Data == null || base64Data.isEmpty) {
+        return null;
+      }
+
+      final bytes = base64Decode(base64Data);
+
+      // Lưu lên Firebase Storage
+      final storageRef = FirebaseStorage.instance
+          .ref()
+          .child('recipes/images/$recipeId.png');
+
+      await storageRef.putData(
+        bytes,
+        SettableMetadata(contentType: 'image/png'),
+      );
+
+      // Lấy URL ảnh public
+      final downloadUrl = await storageRef.getDownloadURL();
+      return downloadUrl;
+    } catch (e) {
+      print('❌ Lỗi generate image từ AI: $e');
+      return null;
+    }
   }
 
 }
