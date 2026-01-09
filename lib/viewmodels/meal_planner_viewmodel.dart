@@ -42,10 +42,23 @@ class MealPlannerViewModel extends ChangeNotifier {
   // Lấy recipe theo ID
   Future<Recipe?> getRecipeById(String recipeId) async {
     try {
+      // Thử tìm theo document ID trước
       final doc = await _db.collection('recipes').doc(recipeId).get();
       if (doc.exists) {
         return Recipe.fromFirestore(doc);
       }
+      
+      // Nếu không tìm thấy, thử tìm theo field recipe_id
+      final querySnapshot = await _db
+          .collection('recipes')
+          .where('recipe_id', isEqualTo: recipeId)
+          .limit(1)
+          .get();
+      
+      if (querySnapshot.docs.isNotEmpty) {
+        return Recipe.fromFirestore(querySnapshot.docs.first);
+      }
+      
       return null;
     } catch (e) {
       print('Lỗi lấy recipe: $e');
