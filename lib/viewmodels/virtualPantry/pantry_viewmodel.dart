@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import '../../models/virtualPantry/ingredient_model.dart';
+import '../../models/virtualPantry/category_model.dart';
 import '../../services/virtualPantry/ingredient_service.dart';
 
 class PantryViewModel extends ChangeNotifier {
   final IngredientService _service = IngredientService();
 
   List<Ingredient> ingredients = [];
+  List<Category> categories = [];
   bool isLoading = false;
+  bool isLoadingCategories = false;
 
   Future<void> loadIngredients() async {
     isLoading = true;
@@ -31,6 +34,16 @@ class PantryViewModel extends ChangeNotifier {
   Future<void> useIngredient(String id, double amount) async {
     await _service.useIngredient(id, amount);
     await loadIngredients();
+  }
+
+  Future<void> loadCategories() async {
+    isLoadingCategories = true;
+    notifyListeners();
+
+    categories = await _service.getCategories();
+
+    isLoadingCategories = false;
+    notifyListeners();
   }
 
   String getStatus(Ingredient i) {

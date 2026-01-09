@@ -1,10 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/virtualPantry/ingredient_model.dart';
+import '../../models/virtualPantry/category_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class IngredientService {
   final _collection =
       FirebaseFirestore.instance.collection('ingredient_inventory');
+  final _categoryCollection =
+      FirebaseFirestore.instance.collection('ingredient_categories');
 
   // Tạo "slug" thân thiện từ tên nguyên liệu (không dấu, snake_case)
   String _slugify(String text) {
@@ -52,6 +55,38 @@ class IngredientService {
   Future<String?> _getHouseholdId() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('household_code');
+  }
+
+  // Lấy danh sách categories từ Firebase
+  Future<List<Category>> getCategories() async {
+    // Lấy tất cả categories (dùng chung, không phụ thuộc household)
+    final snapshot = await _categoryCollection.get();
+    
+    return snapshot.docs
+        .map((doc) => Category.fromFirestore(doc))
+        .toList();
+  }
+
+  // Thêm category mới vào Firebase
+  Future<void> addCategory(Category category) async {
+    try {
+      // Kiểm tra category_id đã tồn tại chưa (dùng chung, không theo household)
+      final existing = await _categoryCollection
+          .where('category_id', isEqualTo: category.categoryId)
+          .get();
+
+      if (existing.docs.isNotEmpty) {
+        throw Exception('Danh mục với ID "${category.categoryId}" đã tồn tại');
+      }
+
+      // Thêm category mới
+      await _categoryCollection.add({
+        'category_id': category.categoryId,
+        'category_name': category.categoryName,
+      });
+    } catch (e) {
+      throw Exception('Không thể thêm danh mục: ${e.toString()}');
+    }
   }
 
   Future<List<Ingredient>> getIngredients() async {

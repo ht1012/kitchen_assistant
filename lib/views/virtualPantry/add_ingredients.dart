@@ -32,19 +32,6 @@ class _AddIngredientPageState extends State<AddIngredientPage> {
 
   bool get isEditMode => widget.ingredient != null;
 
-  // ===== Dropdown data =====
-  final List<Map<String, String>> categories = [
-    {'id': 'fruit', 'name': 'Trái cây'},
-    {'id': 'vegetable', 'name': 'Rau củ'},
-    {'id': 'meat', 'name': 'Thịt'},
-    {'id': 'seafood', 'name': 'Hải sản'},
-    {'id': 'dairy', 'name': 'Sữa & chế phẩm'},
-    {'id': 'grain', 'name': 'Gạo & ngũ cốc'},
-    {'id': 'spice', 'name': 'Gia vị & thảo mộc'},
-    {'id': 'sauce', 'name': 'Nước sốt & gia vị lỏng'},
-    {'id': 'oil', 'name': 'Dầu & mỡ'},
-  ];
-
   final List<String> units = [
     'g',
     'kg',
@@ -81,6 +68,12 @@ class _AddIngredientPageState extends State<AddIngredientPage> {
           ? selectedDate!.toString().split(' ')[0]
           : '',
     );
+
+    // Load categories từ Firebase
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final viewModel = Provider.of<PantryViewModel>(context, listen: false);
+      viewModel.loadCategories();
+    });
   }
 
   @override
@@ -213,10 +206,19 @@ class _AddIngredientPageState extends State<AddIngredientPage> {
           });
         }
         
+        // Barcode service trả về categoryId, kiểm tra xem có trong Firebase categories không
         if (productData['categoryId'] != null) {
-          setState(() {
-            selectedCategoryId = productData['categoryId'] as String;
-          });
+          final categoryId = productData['categoryId'] as String;
+          final viewModel = Provider.of<PantryViewModel>(context, listen: false);
+          // Kiểm tra categoryId có tồn tại trong Firebase categories không
+          final categoryExists = viewModel.categories.any(
+            (c) => c.categoryId == categoryId,
+          );
+          if (categoryExists) {
+            setState(() {
+              selectedCategoryId = categoryId;
+            });
+          }
         }
 
         if (mounted) {
@@ -286,23 +288,32 @@ class _AddIngredientPageState extends State<AddIngredientPage> {
       }
     }
     
-    // Hỗ trợ categoryId hoặc categoryName
+    // Hỗ trợ categoryId hoặc categoryName từ QR code
+    final viewModel = Provider.of<PantryViewModel>(context, listen: false);
+    
     if (qrData.containsKey('categoryId')) {
       final categoryId = (qrData['categoryId'] ?? '').toString();
-      if (categories.any((c) => c['id'] == categoryId)) {
+      // Kiểm tra categoryId có tồn tại trong Firebase categories không
+      final categoryExists = viewModel.categories.any(
+        (c) => c.categoryId == categoryId,
+      );
+      if (categoryExists) {
         setState(() {
           selectedCategoryId = categoryId;
         });
       }
     } else if (qrData.containsKey('categoryName')) {
       final categoryName = (qrData['categoryName'] ?? '').toString().toLowerCase();
-      final matched = categories.firstWhere(
-        (c) => (c['name'] ?? '').toLowerCase() == categoryName,
-        orElse: () => {},
+      // Tìm category theo name (không phân biệt hoa thường)
+      final matched = viewModel.categories.firstWhere(
+        (c) => c.categoryName.toLowerCase() == categoryName,
+        orElse: () => viewModel.categories.isNotEmpty 
+            ? viewModel.categories.first 
+            : throw StateError('No categories'),
       );
-      if (matched.isNotEmpty) {
+      if (viewModel.categories.isNotEmpty) {
         setState(() {
-          selectedCategoryId = matched['id'];
+          selectedCategoryId = matched.categoryId;
         });
       }
     }
@@ -424,23 +435,46 @@ class _AddIngredientPageState extends State<AddIngredientPage> {
                       const SizedBox(height: 12),
 
                       // ===== Category dropdown (FULL WIDTH) =====
-                      _dropdownField(
-                        label: 'Danh mục',
-                        value: selectedCategoryId,
-                        items: categories
-                            .map(
-                              (c) => DropdownMenuItem(
-                                value: c['id'],
-                                child: Text(c['name']!),
+                      Consumer<PantryViewModel>(
+                        builder: (context, viewModel, child) {
+                          if (viewModel.isLoadingCategories) {
+                            return const Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(16.0),
+                                child: CircularProgressIndicator(),
                               ),
-                            )
-                            .toList(),
-                        onChanged: (value) {
-                          setState(() {
-                            selectedCategoryId = value;
-                          });
+                            );
+                          }
+
+                          if (viewModel.categories.isEmpty) {
+                            return const Padding(
+                              padding: EdgeInsets.all(16.0),
+                              child: Text(
+                                'Chưa có danh mục. Vui lòng thêm danh mục trong Firebase.',
+                                style: TextStyle(color: Colors.red),
+                              ),
+                            );
+                          }
+
+                          return _dropdownField(
+                            label: 'Danh mục',
+                            value: selectedCategoryId,
+                            items: viewModel.categories
+                                .map(
+                                  (category) => DropdownMenuItem(
+                                    value: category.categoryId,
+                                    child: Text(category.categoryName),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (value) {
+                              setState(() {
+                                selectedCategoryId = value;
+                              });
+                            },
+                            enabled: !isEditMode,
+                          );
                         },
-                        enabled: !isEditMode,
                       ),
                       const SizedBox(height: 12),
 
@@ -635,12 +669,20 @@ class _AddIngredientPageState extends State<AddIngredientPage> {
       }
     }
 
+    final viewModel =
+        Provider.of<PantryViewModel>(context, listen: false);
+
+    // Tìm categoryName từ categoryId
+    final selectedCategory = viewModel.categories.firstWhere(
+      (c) => c.categoryId == selectedCategoryId,
+      orElse: () => viewModel.categories.first, // Fallback nếu không tìm thấy
+    );
+
     final ingredient = Ingredient(
       id: isEditMode ? widget.ingredient!.id : '',
       name: nameController.text,
       categoryId: selectedCategoryId!,
-      categoryName: categories
-          .firstWhere((c) => c['id'] == selectedCategoryId)['name']!,
+      categoryName: selectedCategory.categoryName,
       quantity: double.parse(quantityController.text),
       unit: selectedUnit!,
       expirationDate: selectedDate!,
@@ -648,9 +690,6 @@ class _AddIngredientPageState extends State<AddIngredientPage> {
       householdId: isEditMode ? widget.ingredient!.householdId : '', // householdId sẽ được cập nhật trong service
       slug: isEditMode ? widget.ingredient!.slug : '', // slug sẽ được tạo lại trong service
     );
-
-    final viewModel =
-        Provider.of<PantryViewModel>(context, listen: false);
 
     try {
       if (isEditMode) {
