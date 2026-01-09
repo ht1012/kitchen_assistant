@@ -156,7 +156,7 @@ class SmartRecipeProvider {
   Future<List<RecipeMatch>> getRecipesByPantry(
     List<Ingredient> pantryIngredients, {
     Map<String, dynamic>? filters,
-    double minMatchPercentage = 80.0,
+    double minMatchPercentage = 10.0,
   }) async {
     // 1. Lấy tất cả công thức (có thể áp dụng filter)
     List<Recipe> allRecipes;
@@ -226,7 +226,9 @@ class SmartRecipeProvider {
       for (var recipe in aiRecipes) {
         final match = _calculateRecipeMatch(recipe, pantryMapByName, pantryMapById);
         // AI sinh ra dựa trên nguyên liệu mình có, nên tỷ lệ match thường sẽ cao
-        matches.add(match);
+        if (match.matchPercentage >= minMatchPercentage) {
+          matches.add(match);
+        }
       }
     }
     // 4. Sắp xếp theo match percentage giảm dần
