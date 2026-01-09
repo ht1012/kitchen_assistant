@@ -3,6 +3,8 @@ import 'package:video_player/video_player.dart'; // Cần thêm package này và
 import 'package:kitchen_assistant/models/Recipe.dart';
 // import 'package:kitchen_assistant/services/ai_recipe_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
+import '../../viewmodels/virtualPantry/pantry_viewmodel.dart';
 
 class RecipeDetail extends StatefulWidget {
   final String recipeId; // Nhận recipeId
@@ -102,6 +104,96 @@ class _RecipeDetailState extends State<RecipeDetail> {
       setState(() {
         _isLoading = false;
       });
+    }
+  }
+
+  Future<void> _handleStartCooking() async {
+    if (_recipe == null || _recipe!.ingredientsRequirements.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Công thức không có nguyên liệu'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    // Hiển thị loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      final viewModel = Provider.of<PantryViewModel>(context, listen: false);
+      
+      // Đảm bảo ingredients đã được load
+      if (viewModel.ingredients.isEmpty) {
+        await viewModel.loadIngredients();
+      }
+
+      // Chuyển đổi ingredients requirements sang format cần thiết
+      final recipeIngredients = _recipe!.ingredientsRequirements.map((ing) => {
+        'id': ing.id,
+        'name': ing.name,
+        'amount': ing.amount,
+        'unit': ing.unit,
+      }).toList();
+
+      // Trừ nguyên liệu
+      final results = await viewModel.useIngredientsForRecipe(recipeIngredients);
+
+      if (mounted) {
+        Navigator.pop(context); // Đóng loading
+
+        // Hiển thị kết quả
+        final successCount = results['success']?.length ?? 0;
+        final failedCount = results['failed']?.length ?? 0;
+        final notFoundCount = results['notFound']?.length ?? 0;
+
+        String message = '';
+        Color backgroundColor = Colors.green;
+
+        if (successCount > 0 && failedCount == 0 && notFoundCount == 0) {
+          message = 'Đã trừ $successCount nguyên liệu. Bắt đầu nấu!';
+          backgroundColor = Colors.green;
+          setState(() {
+            _isCooking = true;
+          });
+        } else if (successCount > 0) {
+          message = 'Đã trừ $successCount nguyên liệu';
+          if (failedCount > 0) message += '. $failedCount nguyên liệu không đủ';
+          if (notFoundCount > 0) message += '. $notFoundCount nguyên liệu không tìm thấy';
+          backgroundColor = Colors.orange;
+          setState(() {
+            _isCooking = true;
+          });
+        } else {
+          message = 'Không thể trừ nguyên liệu. Vui lòng kiểm tra lại kho.';
+          if (notFoundCount > 0) message += ' ($notFoundCount nguyên liệu không tìm thấy)';
+          backgroundColor = Colors.red;
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: backgroundColor,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // Đóng loading
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
     }
   }
 
@@ -691,11 +783,12 @@ Widget _buildBottomBar() {
           // --- BUTTON 1: Bắt đầu nấu / Đang nấu ---
           Expanded(
             child: GestureDetector(
-              onTap: () {
+              onTap: _isCooking ? () {
+                // Nếu đang nấu, chỉ toggle state
                 setState(() {
-                  _isCooking = !_isCooking;
+                  _isCooking = false;
                 });
-              },
+              } : _handleStartCooking,
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 20), // Hiệu ứng chuyển màu mượt mà
                 padding: const EdgeInsets.symmetric(vertical: 12), // Giảm padding dọc một chút để đỡ bị cao quá

@@ -199,4 +199,133 @@ class IngredientService {
       throw Exception('Không thể sử dụng nguyên liệu: ${e.toString()}');
     }
   }
+
+  // Trừ nhiều nguyên liệu cùng lúc (dùng khi nấu món ăn)
+  // recipeIngredients: Danh sách nguyên liệu cần trừ từ recipe
+  Future<Map<String, dynamic>> useIngredientsForRecipe(
+    List<Ingredient> pantryIngredients,
+    List<dynamic> recipeIngredients,
+  ) async {
+    final results = {
+      'success': <String>[],
+      'failed': <String>[],
+      'notFound': <String>[],
+    };
+
+    try {
+      final householdId = await _getHouseholdId();
+      if (householdId == null || householdId.isEmpty) {
+        throw Exception('Chưa có mã gia đình. Vui lòng đăng nhập lại.');
+      }
+
+      // Tạo map để tìm nguyên liệu trong kho nhanh hơn
+      final Map<String, Ingredient> pantryMap = {};
+      for (var ingredient in pantryIngredients) {
+        // Map theo slug (id thân thiện)
+        final normalizedSlug = _slugify(ingredient.name).toLowerCase();
+        pantryMap[normalizedSlug] = ingredient;
+        
+        // Map theo id nếu có
+        if (ingredient.id.isNotEmpty) {
+          pantryMap[ingredient.id] = ingredient;
+        }
+      }
+
+      // Xử lý từng nguyên liệu trong recipe
+      for (var requiredIngredient in recipeIngredients) {
+        try {
+          // Parse dữ liệu từ recipe ingredient
+          final requiredId = (requiredIngredient['id'] ?? '').toString().toLowerCase();
+          final requiredName = (requiredIngredient['name'] ?? '').toString();
+          final requiredAmount = (requiredIngredient['amount'] as num?)?.toDouble() ?? 0.0;
+          final requiredUnit = (requiredIngredient['unit'] ?? '').toString().toLowerCase();
+
+          if (requiredAmount <= 0) continue;
+
+          // Tìm nguyên liệu trong kho
+          Ingredient? pantryIngredient;
+          
+          // Ưu tiên tìm theo id (slug) từ recipe
+          if (requiredId.isNotEmpty && pantryMap.containsKey(requiredId)) {
+            pantryIngredient = pantryMap[requiredId];
+          } else {
+            // Tìm theo tên (normalized slug)
+            final normalizedRequiredId = _slugify(requiredName).toLowerCase();
+            pantryIngredient = pantryMap[normalizedRequiredId];
+            
+            // Nếu vẫn không tìm thấy, tìm theo tên tương tự
+            if (pantryIngredient == null) {
+              try {
+                pantryIngredient = pantryMap.values.firstWhere(
+                  (ing) {
+                    final ingSlug = _slugify(ing.name).toLowerCase();
+                    return ingSlug == normalizedRequiredId || 
+                           ingSlug.contains(normalizedRequiredId) ||
+                           normalizedRequiredId.contains(ingSlug);
+                  },
+                );
+              } catch (e) {
+                // Không tìm thấy
+                pantryIngredient = null;
+              }
+            }
+          }
+
+          if (pantryIngredient == null) {
+            results['notFound']!.add(requiredName);
+            continue;
+          }
+
+          // Chuyển đổi đơn vị và tính số lượng cần trừ
+          final convertedAmount = _convertUnitForRecipe(
+            requiredAmount,
+            requiredUnit,
+            pantryIngredient.unit.toLowerCase(),
+          );
+
+          // Kiểm tra số lượng có đủ không
+          if (pantryIngredient.quantity < convertedAmount) {
+            results['failed']!.add('$requiredName (thiếu ${convertedAmount - pantryIngredient.quantity} ${pantryIngredient.unit})');
+            continue;
+          }
+
+          // Trừ nguyên liệu
+          await useIngredient(pantryIngredient.id, convertedAmount);
+          results['success']!.add(requiredName);
+        } catch (e) {
+          final ingredientName = (requiredIngredient['name'] ?? 'Nguyên liệu').toString();
+          results['failed']!.add('$ingredientName: ${e.toString()}');
+        }
+      }
+
+      return results;
+    } catch (e) {
+      throw Exception('Không thể sử dụng nguyên liệu: ${e.toString()}');
+    }
+  }
+
+  // Chuyển đổi đơn vị cho recipe (đơn giản hóa)
+  double _convertUnitForRecipe(double amount, String fromUnit, String toUnit) {
+    if (fromUnit == toUnit) return amount;
+
+    // Chuyển về gram hoặc ml làm đơn vị chuẩn
+    double amountInBase = amount;
+    
+    // Chuyển từUnit về base
+    if (['kg', 'kilogram'].contains(fromUnit)) {
+      amountInBase = amount * 1000; // kg -> g
+    } else if (['l', 'liter', 'litre'].contains(fromUnit)) {
+      amountInBase = amount * 1000; // l -> ml
+    }
+
+    // Chuyển từ base về toUnit
+    if (['kg', 'kilogram'].contains(toUnit)) {
+      return amountInBase / 1000; // g -> kg
+    } else if (['l', 'liter', 'litre'].contains(toUnit)) {
+      return amountInBase / 1000; // ml -> l
+    }
+
+    // Nếu cùng nhóm đơn vị (g, ml, piece, item, etc.) thì không cần chuyển
+    return amount;
+  }
 }

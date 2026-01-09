@@ -36,6 +36,13 @@ class PantryViewModel extends ChangeNotifier {
     await loadIngredients();
   }
 
+  // Trừ nhiều nguyên liệu cùng lúc khi nấu món ăn
+  Future<Map<String, dynamic>> useIngredientsForRecipe(List<dynamic> recipeIngredients) async {
+    final results = await _service.useIngredientsForRecipe(ingredients, recipeIngredients);
+    await loadIngredients(); // Reload để cập nhật UI
+    return results;
+  }
+
   Future<void> loadCategories() async {
     isLoadingCategories = true;
     notifyListeners();
