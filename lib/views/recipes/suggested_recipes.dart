@@ -67,7 +67,7 @@ class _RecipesScreenState extends State<Recipes> {
       final results = await _provider.getRecipesByPantry(
         pantryIngredients,
         filters: queryParams.isNotEmpty ? queryParams : null,
-        minMatchPercentage: 7.0,
+        minMatchPercentage: 0.0,
       );
 
       if (mounted) {
