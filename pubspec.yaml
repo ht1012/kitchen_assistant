@@ -72,7 +72,7 @@ flutter:
     - assets/images/recipes/
     - assets/images/
     - assets/icons/
-    - assets/video/
+    - assets/videos/
 
   # To add assets to your application, add an assets section, like this:
   # assets:
