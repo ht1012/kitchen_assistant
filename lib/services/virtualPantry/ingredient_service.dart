@@ -68,7 +68,7 @@ class IngredientService {
         .map((doc) => Ingredient.fromFirestore(doc))
         .toList();
   }
-
+  
   Future<void> addIngredient(Ingredient ingredient) async {
     try {
       final householdId = await _getHouseholdId();
@@ -127,29 +127,6 @@ class IngredientService {
       });
     } catch (e) {
       throw Exception('Không thể cập nhật nguyên liệu: ${e.toString()}');
-    }
-  }
-
-  Future<void> deleteIngredient(String id) async {
-    try {
-      final householdId = await _getHouseholdId();
-      if (householdId == null || householdId.isEmpty) {
-        throw Exception('Chưa có mã gia đình. Vui lòng đăng nhập lại.');
-      }
-
-      // Kiểm tra xem nguyên liệu có thuộc về household này không
-      final doc = await _collection.doc(id).get();
-      if (!doc.exists) {
-        throw Exception('Nguyên liệu không tồn tại');
-      }
-      final docHouseholdId = doc.data()?['household_id'];
-      if (docHouseholdId != householdId) {
-        throw Exception('Không có quyền xóa nguyên liệu này');
-      }
-
-      await _collection.doc(id).delete();
-    } catch (e) {
-      throw Exception('Không thể xóa nguyên liệu: ${e.toString()}');
     }
   }
 

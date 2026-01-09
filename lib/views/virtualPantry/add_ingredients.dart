@@ -646,6 +646,7 @@ class _AddIngredientPageState extends State<AddIngredientPage> {
       expirationDate: selectedDate!,
       imageUrl: imageUrl,
       householdId: isEditMode ? widget.ingredient!.householdId : '', // householdId sẽ được cập nhật trong service
+      slug: isEditMode ? widget.ingredient!.slug : '', // slug sẽ được tạo lại trong service
     );
 
     final viewModel =

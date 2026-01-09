@@ -10,6 +10,7 @@ class Ingredient {
   final String categoryId;
   final String categoryName;
   final String householdId;
+  final String slug; // id thân thiện, dễ dùng cho AI
 
   Ingredient({
     required this.id,
@@ -21,6 +22,7 @@ class Ingredient {
     required this.categoryId,
     required this.categoryName,
     required this.householdId,
+    required this.slug,
   });
 
   factory Ingredient.fromFirestore(DocumentSnapshot doc) {
@@ -36,6 +38,7 @@ class Ingredient {
       categoryId: data['category_id'] ?? '',
       categoryName: data['category_name'] ?? '',
       householdId: data['household_id'] ?? '',
+      slug: data['ingredient_slug'] ?? '',
     );
   }
 }
