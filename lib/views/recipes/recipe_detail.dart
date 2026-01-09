@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart'; // Cần thêm package này vào pubspec.yaml
+import 'package:kitchen_assistant/models/Recipe.dart';
+// import 'package:kitchen_assistant/services/ai_recipe_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class RecipeDetail extends StatefulWidget {
-  const RecipeDetail({super.key});
+  final String recipeId; // Nhận recipeId
+  
+  const RecipeDetail({super.key, required this.recipeId});
 
   @override
   State<RecipeDetail> createState() => _RecipeDetailState();
@@ -11,19 +16,93 @@ class RecipeDetail extends StatefulWidget {
 class _RecipeDetailState extends State<RecipeDetail> {
   int _selectedTab = 0;
   late VideoPlayerController _videoController;
-  bool _isVideoInitialized = true;
+  bool _isVideoInitialized = false;
   bool _isCooking = false;
+  Recipe? _recipe;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    // Khởi tạo video (Thay URL bằng link video thực tế của bạn)
-    _videoController = VideoPlayerController.asset('assets/videos/pasta.mp4',
-    )..initialize().then((_) {
+    _loadRecipe();
+  }
+
+  Future<void> _loadRecipe() async {
+    try {
+      final db = FirebaseFirestore.instance;
+      // Tìm recipe theo recipe_id
+      final snapshot = await db.collection('recipes')
+          .where('recipe_id', isEqualTo: widget.recipeId)
+          .limit(1)
+          .get();
+      
+      if (snapshot.docs.isNotEmpty) {
         setState(() {
-          _isVideoInitialized = true;
+          _recipe = Recipe.fromFirestore(snapshot.docs.first);
+          _isLoading = false;
         });
+        
+        // Khởi tạo video nếu có
+        if (_recipe?.videoUrl != null && _recipe!.videoUrl!.isNotEmpty) {
+          _videoController = VideoPlayerController.networkUrl(Uri.parse(_recipe!.videoUrl!))
+            ..initialize().then((_) {
+              if (mounted) {
+                setState(() {
+                  _isVideoInitialized = true;
+                });
+              }
+            });
+        } else {
+          // Fallback về asset video nếu không có video URL
+          _videoController = VideoPlayerController.asset('assets/videos/video1.mp4')
+            ..initialize().then((_) {
+              if (mounted) {
+                setState(() {
+                  _isVideoInitialized = true;
+                });
+              }
+            });
+        }
+      } else {
+        // Nếu không tìm thấy theo recipe_id, thử tìm theo document ID
+        final doc = await db.collection('recipes').doc(widget.recipeId).get();
+        if (doc.exists) {
+          setState(() {
+            _recipe = Recipe.fromFirestore(doc);
+            _isLoading = false;
+          });
+          
+          if (_recipe?.videoUrl != null && _recipe!.videoUrl!.isNotEmpty) {
+            _videoController = VideoPlayerController.networkUrl(Uri.parse(_recipe!.videoUrl!))
+              ..initialize().then((_) {
+                if (mounted) {
+                  setState(() {
+                    _isVideoInitialized = true;
+                  });
+                }
+              });
+          } else {
+            _videoController = VideoPlayerController.asset('assets/videos/video1.mp4')
+              ..initialize().then((_) {
+                if (mounted) {
+                  setState(() {
+                    _isVideoInitialized = true;
+                  });
+                }
+              });
+          }
+        } else {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      print("Lỗi khi load recipe: $e");
+      setState(() {
+        _isLoading = false;
       });
+    }
   }
 
   @override
@@ -34,6 +113,21 @@ class _RecipeDetailState extends State<RecipeDetail> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+    
+    if (_recipe == null) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(title: const Text('Không tìm thấy công thức')),
+        body: const Center(child: Text('Công thức không tồn tại')),
+      );
+    }
+    
     return Scaffold(
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
@@ -124,9 +218,12 @@ class _RecipeDetailState extends State<RecipeDetail> {
         // Nút Back
         Positioned(
           left: 16, top: 40,
-          child: CircleAvatar(
-            backgroundColor: Colors.white.withOpacity(0.9),
-            child: const Icon(Icons.arrow_back, color: Colors.black),
+          child: GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: CircleAvatar(
+              backgroundColor: Colors.white.withOpacity(0.9),
+              child: const Icon(Icons.arrow_back, color: Colors.black),
+            ),
           ),
         ),
         // Title đè lên video
@@ -141,19 +238,29 @@ class _RecipeDetailState extends State<RecipeDetail> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(color: Colors.grey, borderRadius: BorderRadius.circular(8)),
-                    child: const Text('Italian', style: TextStyle(color: Colors.white, fontSize: 12)),
+                    child: Text(
+                      _recipe?.categories.cuisine ?? 'N/A',
+                      style: const TextStyle(color: Colors.white, fontSize: 12)
+                    ),
                   ),
                   const SizedBox(width: 10),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(color: Colors.grey, borderRadius: BorderRadius.circular(8)),
-                    child: const Text('Dễ', style: TextStyle(color: Colors.white, fontSize: 12)),
+                    child: Text(
+                      _recipe?.difficulty == Difficulty.easy ? 'Dễ' : 
+                      _recipe?.difficulty == Difficulty.medium ? 'Trung bình' : 'Khó',
+                      style: const TextStyle(color: Colors.white, fontSize: 12)
+                    ),
                   ),
                 ],
               ),
               
               const SizedBox(height: 8),
-              const Text('Mỳ Pasta sốt cà chua', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+              Text(
+                _recipe?.recipeName ?? 'Chưa có tên',
+                style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)
+              ),
               const SizedBox(height: 4),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -161,22 +268,31 @@ class _RecipeDetailState extends State<RecipeDetail> {
                   Row(children: [
                     const Icon(Icons.schedule, color: Colors.white70, size: 16),
                     const SizedBox(width: 4),
-                    const Text('40 phút', style: TextStyle(color: Colors.white70, fontSize: 14)),
+                    Text(
+                      '${_recipe?.prepTime ?? 0} phút',
+                      style: const TextStyle(color: Colors.white70, fontSize: 14)
+                    ),
                   ],),
                   const SizedBox(width: 16),
                   Row(
                     children: [
                       const Icon(Icons.person, color: Colors.white70, size: 16),
                       const SizedBox(width: 4),
-                      const Text('2 phần', style: TextStyle(color: Colors.white70, fontSize: 14)),
+                      Text(
+                        '${_recipe?.categories.servings ?? 0} người',
+                        style: const TextStyle(color: Colors.white70, fontSize: 14)
+                      ),
                     ],
                   ),
                   const SizedBox(width: 16),
                   Row(
-                    children: const [
-                      Icon(Icons.fire_extinguisher, color: Colors.yellow, size: 16),
-                      SizedBox(width: 4),
-                      Text('4.8', style: TextStyle(color: Colors.white70, fontSize: 14)),
+                    children: [
+                      const Icon(Icons.fire_extinguisher, color: Colors.yellow, size: 16),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${_recipe?.calories ?? 0} calo',
+                        style: const TextStyle(color: Colors.white70, fontSize: 14)
+                      ),
                     ],
                   ),
                 ],
@@ -192,15 +308,13 @@ class _RecipeDetailState extends State<RecipeDetail> {
     return Row(
       children: [
         Padding(
-          padding: const EdgeInsets.all(10),
+          padding: const EdgeInsets.all(25),
         ),
-        const Expanded(
+        Expanded(
           child: Text(
-            'Một món mì ống béo ngậy và thơm ngon với cà chua tươi và '
-             + 'các loại thảo mộc. Món ăn này rất dễ làm và chắc chắn sẽ làm hài lòng cả gia đình bạn.',
-            style: TextStyle(color: Color(0xFF354152), height: 1.5),
-            maxLines: 5,
-            overflow: TextOverflow.ellipsis,
+            _recipe?.description ?? 'Một món ăn ngon và bổ dưỡng.',
+            style: const TextStyle(color: Color(0xFF354152)),
+            // overflow: TextOverflow.ellipsis,
           ),
         ),
       ],
@@ -216,9 +330,9 @@ class _RecipeDetailState extends State<RecipeDetail> {
         ),
       child: Row(
         children: [
-        Expanded(child: _buildInfoCard('Thời gian chuẩn bị', '15 phút')),
+        Expanded(child: _buildInfoCard('Thời gian chuẩn bị', '${_recipe?.prepTime ?? 0} phút')),
         const SizedBox(width: 12),
-        Expanded(child: _buildInfoCard('Thời gian nấu', '25 phút')),
+        Expanded(child: _buildInfoCard('Thời gian nấu', '${_recipe?.prepTime ?? 0} phút')),
       ],
       ),
       
@@ -359,13 +473,22 @@ Widget _buildSingleTabBtn({
 }
 
   Widget _buildIngredientsList() {
+    if (_recipe == null || _recipe!.ingredientsRequirements.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.all(16.0),
+        child: Text('Chưa có thông tin nguyên liệu'),
+      );
+    }
+    
     return Column(
       spacing: 10,
-      children: [
-        _buildIngredientItem('Mỳ Pasta', '500g', true),
-        _buildIngredientItem('Cà chua', '1 quả', true),
-        _buildIngredientItem('Tỏi', '1 củ', true),
-      ],
+      children: _recipe!.ingredientsRequirements.map((ingredient) {
+        return _buildIngredientItem(
+          ingredient.name,
+          '${ingredient.amount} ${ingredient.unit}',
+          true, // Có thể thêm logic kiểm tra trong kho sau
+        );
+      }).toList(),
     );
   }
 
@@ -407,16 +530,21 @@ Widget _buildSingleTabBtn({
     );
   }
   Widget _buildInstructionsList() {
-    // Đây là nội dung giả lập cho trang "Hướng dẫn"
+    if (_recipe == null || _recipe!.steps.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.all(16.0),
+        child: Text('Chưa có hướng dẫn nấu ăn'),
+      );
+    }
+    
     return Column(
       spacing: 10,
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildStepItem(1, "Luộc mỳ trong nước sôi khoảng 10 phút đến khi chín tới.", note: "Mẹo: Thêm một chút muối vào nước luộc để mỳ thêm đậm đà."),
-        _buildStepItem(2, "Thái nhỏ cà chua và tỏi. Phi thơm tỏi với dầu ô liu."),
-        _buildStepItem(3, "Cho cà chua vào xào chín mềm, nêm gia vị vừa ăn."),
-        _buildStepItem(4, "Trộn mỳ với sốt, thêm húng quế và thưởng thức."),
-      ],
+      children: _recipe!.steps.asMap().entries.map((entry) {
+        final index = entry.key + 1;
+        final step = entry.value;
+        return _buildStepItem(index, step);
+      }).toList(),
     );
   }
 

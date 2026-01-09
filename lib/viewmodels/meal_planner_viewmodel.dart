@@ -100,6 +100,7 @@ class MealPlannerViewModel extends ChangeNotifier {
           categoryId: data['category_id'] ?? '',
           categoryName: data['category_name'] ?? '',
           householdId: householdId,
+          slug: data['ingredient_slug'] ?? '', // Thêm slug
         );
       }).toList();
     } catch (e) {
@@ -135,6 +136,7 @@ class MealPlannerViewModel extends ChangeNotifier {
             categoryId: existing.categoryId,
             categoryName: existing.categoryName,
             householdId: existing.householdId,
+            slug: existing.slug,
           );
         } else {
           pantryMap[normalizedName] = ingredient;
@@ -278,6 +280,7 @@ class MealPlannerViewModel extends ChangeNotifier {
             categoryId: existing.categoryId,
             categoryName: existing.categoryName,
             householdId: existing.householdId,
+            slug: existing.slug,
           );
         } else {
           pantryMap[normalizedName] = ingredient;

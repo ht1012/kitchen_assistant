@@ -125,6 +125,7 @@ class ShoppingListViewModel extends ChangeNotifier {
             categoryId: '',
             categoryName: '',
             householdId: '',
+            slug: '',
           ),
         );
 
@@ -140,6 +141,7 @@ class ShoppingListViewModel extends ChangeNotifier {
             categoryId: existingIngredient.categoryId,
             categoryName: existingIngredient.categoryName,
             householdId: existingIngredient.householdId,
+            slug: existingIngredient.slug,
           );
           await _ingredientService.updateIngredient(
             existingIngredient.id,
@@ -157,6 +159,7 @@ class ShoppingListViewModel extends ChangeNotifier {
             categoryId: categoryId,
             categoryName: categoryName,
             householdId: householdId,
+            slug: '',
           );
           await _ingredientService.addIngredient(newIngredient);
         }

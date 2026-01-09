@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:kitchen_assistant/views/recipes/recipe_detail.dart';
+// import 'package:kitchen_assistant/models/Recipe.dart';
+// import 'package:kitchen_assistant/views/recipes/recipe_detail.dart';
 
 // --- WIDGET TÁI SỬ DỤNG: CARD MÓN ĂN ---
 class RecipeCard extends StatelessWidget {
@@ -9,6 +10,12 @@ class RecipeCard extends StatelessWidget {
   final String steps;
   final List<String> tags;
   final int matchPercent;
+  final int sumIngredient;
+  final int fillIngredient;
+  final String recipeId; // Thêm recipeId
+  // final VoidCallback? onViewRecipe; // Callback khi nhấn "Xem công thức"
+  // final VoidCallback? onPlanMeal; // Callback khi nhấn "Tạo kế hoạch"
+  final VoidCallback? onImageTap; // Callback khi nhấn ảnh
   
   const RecipeCard({
     super.key,
@@ -18,6 +25,12 @@ class RecipeCard extends StatelessWidget {
     required this.steps,
     required this.tags,
     required this.matchPercent,
+    required this.sumIngredient,
+    required this.fillIngredient,
+    required this.recipeId,
+    // this.onViewRecipe,
+    // this.onPlanMeal,
+    this.onImageTap,
   });
   Color _getTagColor(String tag) {
     // Hàm lấy màu sắc dựa trên thẻ
@@ -49,9 +62,12 @@ class RecipeCard extends StatelessWidget {
           // Ảnh & Badge
           Stack(
             children: [
-              ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                child: Image.asset(image, height: 180, width: double.infinity, fit: BoxFit.cover),
+              GestureDetector(
+                onTap: onImageTap,
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                  child: Image.network(image,height: 180, width: double.infinity, fit: BoxFit.cover),
+                ),
               ),
               Positioned(
                 bottom: 10, left: 10,
@@ -70,7 +86,7 @@ class RecipeCard extends StatelessWidget {
                     color: matchPercent == 100 ? Colors.green : Colors.orange,
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: Text(matchPercent == 100 ? '7/7' : '5/7', style: const TextStyle(color: Colors.white, fontSize: 12)),
+                  child: Text('${fillIngredient} / ${sumIngredient} ', style: const TextStyle(color: Colors.white, fontSize: 12)),
                 ),
               ),
             ],
@@ -119,14 +135,9 @@ class RecipeCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => RecipeDetail()
-                            ),
-                            );
-                        }, // <--- Thêm logic chuyển trang ở đây nếu muốn
+                        onPressed:(){
+                          Navigator.pushNamed(context, '/home/recipes/recipe-detail', arguments: recipeId);
+                        },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: matchPercent == 100 ? const Color(0xFF00C850) : Colors.orange,
                           foregroundColor: Colors.white,
@@ -138,7 +149,7 @@ class RecipeCard extends StatelessWidget {
                     const SizedBox(width: 10),
                     Expanded(
                       child: OutlinedButton(
-                        onPressed: () {},
+                        onPressed: (){},
                         style: OutlinedButton.styleFrom(
                           foregroundColor: const Color(0xFF00C850),
                           side: const BorderSide(color: Color(0xFF00C850)),
