@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:kitchen_assistant/views/login/login-and-intro.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:kitchen_assistant/views/recipes/recipe_detail.dart';
 import 'package:kitchen_assistant/views/recipes/suggested_recipes.dart';
 import 'firebase_options.dart';
 import 'package:provider/provider.dart';
@@ -54,6 +55,10 @@ class MyApp extends StatelessWidget {
             routes: {
               '/home': (context) => const Dashboard(),
               '/home/recipes': (context) => const Recipes(),
+              '/home/recipes/recipe-detail': (context) {
+                final args = ModalRoute.of(context)!.settings.arguments as String;
+                return  RecipeDetail(recipeId: args);
+              }
             },
           ),
           
