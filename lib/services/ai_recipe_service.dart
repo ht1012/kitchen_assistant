@@ -156,7 +156,7 @@ class SmartRecipeProvider {
   Future<List<RecipeMatch>> getRecipesByPantry(
     List<Ingredient> pantryIngredients, {
     Map<String, dynamic>? filters,
-    double minMatchPercentage = 10.0,
+    double minMatchPercentage = 7.0,
   }) async {
     // 1. Lấy tất cả công thức (có thể áp dụng filter)
     List<Recipe> allRecipes;
@@ -174,7 +174,7 @@ class SmartRecipeProvider {
     final Map<String, Ingredient> pantryMapById = {};
     
     for (var ingredient in pantryIngredients) {
-      final normalizedName = _normalizeIngredientName(ingredient.name);
+      final normalizedName = _normalizeIngredientName(ingredient.slug);
       
       // Map theo tên (normalized)
       if (pantryMapByName.containsKey(normalizedName)) {
@@ -190,6 +190,7 @@ class SmartRecipeProvider {
           categoryId: existing.categoryId,
           categoryName: existing.categoryName,
           householdId: existing.householdId,
+          slug: existing.slug,
         );
       } else {
         pantryMapByName[normalizedName] = ingredient;
@@ -217,7 +218,7 @@ class SmartRecipeProvider {
 
       // Chiến thuật: Lấy nguyên liệu đầu tiên hoặc nguyên liệu có số lượng nhiều nhất làm "chủ đề"
       // Ở đây mình lấy nguyên liệu đầu tiên trong danh sách để demo
-      String mainIngredientName = pantryIngredients[0].name;
+      String mainIngredientName = pantryIngredients[0].slug;
 
       // Gọi hàm sinh công thức AI
       List<Recipe> aiRecipes = await _generateRecipeFromAI(mainIngredientName);
