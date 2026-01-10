@@ -405,14 +405,17 @@ class _AddIngredientPageState extends State<AddIngredientPage> {
                             child: Image(
                               image: _image != null
                                   ? FileImage(_image!)
-                                  : const AssetImage('assets/images/ingre.png')
+                                  : (isEditMode &&
+                                          widget.ingredient!.imageUrl.isNotEmpty &&
+                                          widget.ingredient!.imageUrl.startsWith('http')
+                                      ? NetworkImage(widget.ingredient!.imageUrl)
+                                      : const AssetImage('assets/images/ingre.png'))
                                       as ImageProvider,
                               width: 132,
                               height: 130,
                               fit: BoxFit.cover,
                             ),
                           ),
-
                           if (!isEditMode)
                             GestureDetector(
                               onTap: _takePhoto,
@@ -687,8 +690,8 @@ class _AddIngredientPageState extends State<AddIngredientPage> {
       unit: selectedUnit!,
       expirationDate: selectedDate!,
       imageUrl: imageUrl,
-      householdId: isEditMode ? widget.ingredient!.householdId : '', // householdId sẽ được cập nhật trong service
-      slug: isEditMode ? widget.ingredient!.slug : '', // slug sẽ được tạo lại trong service
+      householdId: isEditMode ? widget.ingredient!.householdId : '', 
+      slug: isEditMode ? widget.ingredient!.slug : '', 
     );
 
     try {
