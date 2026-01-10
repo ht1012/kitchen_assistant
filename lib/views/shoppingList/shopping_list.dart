@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../viewmodels/shopping_list_viewmodel.dart';
 import '../../viewmodels/virtualPantry/pantry_viewmodel.dart';
 import '../../models/shopping_list_model.dart';
+import '../../utils/category_emoji_helper.dart';
 
 class ShoppingPage extends StatefulWidget {
   const ShoppingPage({super.key});
@@ -99,20 +100,7 @@ class _ShoppingPageState extends State<ShoppingPage> {
   }
 
   String _getCategoryEmoji(String categoryName) {
-    switch (categoryName) {
-      case 'Rau củ':
-        return '🥬';
-      case 'Thịt & Hải sản':
-        return '🥩';
-      case 'Bánh':
-        return '🍞';
-      case 'Sữa':
-        return '🥛';
-      case 'Đông lạnh':
-        return '❄️';
-      default:
-        return '📦';
-    }
+    return CategoryEmojiHelper.getEmojiByName(categoryName);
   }
 
   Widget _buildHeaderSection(
