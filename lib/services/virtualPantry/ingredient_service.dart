@@ -67,28 +67,6 @@ class IngredientService {
         .toList();
   }
 
-  // Thêm category mới vào Firebase
-  Future<void> addCategory(Category category) async {
-    try {
-      // Kiểm tra category_id đã tồn tại chưa (dùng chung, không theo household)
-      final existing = await _categoryCollection
-          .where('category_id', isEqualTo: category.categoryId)
-          .get();
-
-      if (existing.docs.isNotEmpty) {
-        throw Exception('Danh mục với ID "${category.categoryId}" đã tồn tại');
-      }
-
-      // Thêm category mới
-      await _categoryCollection.add({
-        'category_id': category.categoryId,
-        'category_name': category.categoryName,
-      });
-    } catch (e) {
-      throw Exception('Không thể thêm danh mục: ${e.toString()}');
-    }
-  }
-
   Future<List<Ingredient>> getIngredients() async {
     final householdId = await _getHouseholdId();
     if (householdId == null || householdId.isEmpty) {
@@ -158,7 +136,6 @@ class IngredientService {
         'ingredient_image': ingredient.imageUrl,
         'category_id': ingredient.categoryId,
         'category_name': ingredient.categoryName,
-        'household_id': householdId, // Cập nhật household_id
       });
     } catch (e) {
       throw Exception('Không thể cập nhật nguyên liệu: ${e.toString()}');
